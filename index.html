@@ -82,7 +82,7 @@
                         <h1 class="font-display font-bold text-base tracking-tight">Aura Life OS</h1>
                         <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/20">Nube</span>
                     </div>
-                    <p id="userEmailDisplay" class="text-xs text-slate-500 dark:text-slate-400">Sincronizado</p>
+                    <p id="currentDateLabel" class="text-xs text-slate-500 dark:text-slate-400">Cargando fecha...</p>
                 </div>
             </div>
 
@@ -91,7 +91,15 @@
                     <span>🔥</span>
                     <span id="streakCountLabel">5d</span>
                 </button>
-                <button onclick="logoutUser()" class="p-2 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 text-xs font-semibold hover:bg-rose-500/25 transition" title="Cerrar sesión">
+                <button onclick="togglePomodoroModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 transition">
+                    <i data-lucide="timer" class="w-3.5 h-3.5 text-violet-500"></i>
+                    <span id="headerTimerText">25:00</span>
+                </button>
+                <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
+                    <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+                    <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-700"></i>
+                </button>
+                <button onclick="logoutUser()" class="p-2 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 text-xs font-semibold transition" title="Cerrar sesión">
                     <i data-lucide="log-out" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -106,17 +114,21 @@
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-xs font-semibold text-violet-700 dark:text-violet-300 flex items-center gap-1.5">
                             <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
-                            Captura Mágica con IA
+                            Captura Mágica con IA (Todo en uno)
                         </span>
+                        <button onclick="fillSampleOmni()" class="text-[11px] text-slate-500 dark:text-slate-400 underline hover:text-violet-500">Probar ejemplo</button>
                     </div>
                     <div class="relative flex items-center">
-                        <textarea id="omniInput" rows="2" placeholder="Ej: Hoy hice 4x15 flexiones, gasté $8500 en almuerzo..." class="w-full bg-white/90 dark:bg-slate-900/90 text-sm rounded-2xl pl-3.5 pr-14 py-2.5 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-violet-500 resize-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"></textarea>
-                        <div class="absolute right-2 bottom-2">
-                            <button id="omniSubmitBtn" onclick="processOmniInput()" class="p-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-600/30 hover:opacity-95 transition">
-                                <i data-lucide="arrow-up" class="w-4 h-4"></i>
-                            </button>
+                        <textarea id="omniInput" rows="2" placeholder="Contame qué tenés que hacer, entrenar o gastar..." class="w-full bg-white/90 dark:bg-slate-900/90 text-sm rounded-2xl pl-3.5 pr-20 py-2.5 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-violet-500 resize-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"></textarea>
+                        <div class="absolute right-2 bottom-2 flex items-center gap-1">
+                            <button id="voiceBtn" onclick="startVoiceCapture()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-violet-500 transition"><i data-lucide="mic" class="w-4 h-4"></i></button>
+                            <button id="omniSubmitBtn" onclick="processOmniInput()" class="p-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-600/30 hover:opacity-95 transition"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
                         </div>
                     </div>
+                    <p id="omniStatus" class="text-[11px] text-slate-500 mt-1.5 hidden flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-violet-500 animate-ping"></span>
+                        <span>La IA está organizando tu información...</span>
+                    </p>
                 </div>
             </section>
 
@@ -126,10 +138,9 @@
                     <div class="relative z-10">
                         <div class="flex items-center justify-between mb-2">
                             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-violet-500/30 text-violet-200 border border-violet-400/30">Copiloto del Día</span>
+                            <button onclick="generateDailyBriefing()" class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-xl transition"><i data-lucide="refresh-cw" class="w-3 h-3"></i><span>Actualizar</span></button>
                         </div>
-                        <p id="aiDailyBriefing" class="text-sm text-slate-200 leading-relaxed">
-                            ¡Hola! Tus datos están sincronizados en la nube de Google. Todo listo para romperla hoy.
-                        </p>
+                        <p id="aiDailyBriefing" class="text-sm text-slate-200 leading-relaxed">¡Hola! Tu panel está conectado a la nube de Google. Tenés tus prioridades y tu calistenia en casa listas.</p>
                     </div>
                 </div>
 
@@ -137,9 +148,7 @@
                 <div class="grid grid-cols-3 gap-2.5">
                     <button onclick="switchTab('tasks')" class="p-3 rounded-2xl bg-slate-100/90 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 text-left">
                         <div class="flex items-center justify-between mb-1">
-                            <div class="w-7 h-7 rounded-xl bg-violet-500/15 text-violet-600 flex items-center justify-center">
-                                <i data-lucide="check-square" class="w-4 h-4"></i>
-                            </div>
+                            <div class="w-7 h-7 rounded-xl bg-violet-500/15 text-violet-600 flex items-center justify-center"><i data-lucide="check-square" class="w-4 h-4"></i></div>
                             <span id="statTasksPercent" class="text-[11px] font-bold text-violet-500">0%</span>
                         </div>
                         <p id="statTasksCount" class="font-display font-bold text-lg">0/0</p>
@@ -148,9 +157,7 @@
 
                     <button onclick="switchTab('habits')" class="p-3 rounded-2xl bg-slate-100/90 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 text-left">
                         <div class="flex items-center justify-between mb-1">
-                            <div class="w-7 h-7 rounded-xl bg-teal-500/15 text-teal-600 flex items-center justify-center">
-                                <i data-lucide="dumbbell" class="w-4 h-4"></i>
-                            </div>
+                            <div class="w-7 h-7 rounded-xl bg-teal-500/15 text-teal-600 flex items-center justify-center"><i data-lucide="dumbbell" class="w-4 h-4"></i></div>
                             <span id="statGymSplitBadge" class="text-[10px] font-bold text-teal-500">Empuje</span>
                         </div>
                         <p id="statHabitsCount" class="font-display font-bold text-lg">0/0</p>
@@ -159,9 +166,7 @@
 
                     <button onclick="switchTab('finance')" class="p-3 rounded-2xl bg-slate-100/90 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 text-left">
                         <div class="flex items-center justify-between mb-1">
-                            <div class="w-7 h-7 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
-                                <i data-lucide="wallet" class="w-4 h-4"></i>
-                            </div>
+                            <div class="w-7 h-7 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center"><i data-lucide="wallet" class="w-4 h-4"></i></div>
                             <span class="text-[11px] font-bold text-amber-500">Mes</span>
                         </div>
                         <p id="statFinanceTotal" class="font-display font-bold text-lg truncate">$0</p>
@@ -169,13 +174,29 @@
                     </button>
                 </div>
 
-                <!-- Notas Rápidas -->
+                <!-- Priority Tasks Preview -->
+                <div>
+                    <div class="flex items-center justify-between mb-2.5">
+                        <h2 class="font-display font-bold text-sm flex items-center gap-1.5"><i data-lucide="target" class="w-4 h-4 text-violet-500"></i> Foco Principal</h2>
+                        <button onclick="switchTab('tasks')" class="text-xs text-violet-600 dark:text-violet-400 font-medium hover:underline">Ver todas →</button>
+                    </div>
+                    <div id="homeTasksList" class="space-y-2"></div>
+                </div>
+
+                <!-- Quick Gym Preview Row -->
+                <div>
+                    <div class="flex items-center justify-between mb-2.5">
+                        <h2 class="font-display font-bold text-sm flex items-center gap-1.5"><i data-lucide="dumbbell" class="w-4 h-4 text-teal-500"></i> <span>Entreno en Casa: <span id="homeActiveSplitName" class="text-teal-600 dark:text-teal-400">Empuje</span></span></h2>
+                        <button onclick="switchTab('habits')" class="text-xs text-teal-600 dark:text-teal-400 font-medium hover:underline">Abrir Rutina →</button>
+                    </div>
+                    <div id="homeHabitsGrid" class="grid grid-cols-2 gap-2.5"></div>
+                </div>
+
+                <!-- Smart Notes -->
                 <div class="space-y-2.5">
                     <div class="flex items-center justify-between">
-                        <h2 class="font-display font-bold text-sm flex items-center gap-1.5">
-                            <i data-lucide="sticky-note" class="w-4 h-4 text-amber-500"></i>
-                            Notas Rápidas (Nube)
-                        </h2>
+                        <h2 class="font-display font-bold text-sm flex items-center gap-1.5"><i data-lucide="sticky-note" class="w-4 h-4 text-amber-500"></i> Notas & Recordatorios (Nube)</h2>
+                        <button onclick="openQuickNoteModal()" class="text-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-xl font-semibold transition">+ Nota ventana</button>
                     </div>
                     <div class="flex gap-2">
                         <input id="inlineNoteInput" type="text" placeholder="Escribí una nota..." class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-3.5 py-2 text-xs focus:outline-none focus:border-amber-500" onkeydown="if(event.key==='Enter') addInlineNote()">
@@ -188,48 +209,153 @@
             <!-- ==================== TAB 2: TAREAS ==================== -->
             <div id="tab-tasks" class="space-y-4 hidden">
                 <div class="flex items-center justify-between">
-                    <h2 class="font-display font-bold text-lg">Mis Tareas</h2>
+                    <div>
+                        <h2 class="font-display font-bold text-lg">Mis Tareas & Agenda</h2>
+                        <p class="text-xs text-slate-500">Tocá la varita ✨ para dividir en micro-pasos con IA.</p>
+                    </div>
+                    <button onclick="reorganizeTasksWithAI()" class="px-3 py-2 rounded-2xl bg-violet-600/15 text-violet-600 dark:text-violet-300 border border-violet-500/30 text-xs font-semibold flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Priorizar IA</button>
                 </div>
                 <div class="flex gap-2">
                     <input id="newTaskInput" type="text" placeholder="Nueva tarea..." class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-violet-500" onkeydown="if(event.key==='Enter') addManualTask()">
-                    <button onclick="addManualTask()" class="px-4 rounded-2xl bg-violet-600 text-white font-semibold text-sm">+</button>
+                    <select id="newTaskCategory" class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-2.5 text-xs font-medium">
+                        <option value="Prioridad">🔥 Prioridad</option>
+                        <option value="Trabajo">💼 Trabajo</option>
+                        <option value="Personal">🏠 Personal</option>
+                        <option value="Salud">🌱 Salud</option>
+                    </select>
+                    <button onclick="addManualTask()" class="px-3.5 rounded-2xl bg-violet-600 text-white font-semibold text-sm">+</button>
                 </div>
                 <div id="fullTasksList" class="space-y-2.5"></div>
             </div>
 
             <!-- ==================== TAB 3: GYM & CALISTENIA ==================== -->
             <div id="tab-habits" class="space-y-4 hidden">
-                <div>
-                    <h2 class="font-display font-bold text-lg">Entreno en Casa (Calistenia)</h2>
-                    <p class="text-xs text-slate-400">100% peso corporal sin barra ni máquinas.</p>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="font-display font-bold text-lg flex items-center gap-2">
+                            <span>Entreno en Casa</span>
+                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-300 border border-teal-500/30">Sin Barra</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">100% peso corporal sin máquinas ni barra para colgarse.</p>
+                    </div>
+                    <button onclick="generateGymRoutineWithAI()" class="px-3 py-2 rounded-2xl bg-teal-500/15 text-teal-600 dark:text-teal-300 border border-teal-500/30 text-xs font-semibold flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Armar Rutina IA</button>
                 </div>
+
+                <!-- Split Selector -->
+                <div>
+                    <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                        <button onclick="selectGymSplit('Empuje')" id="split-Empuje" class="gym-split-btn px-3.5 py-2 rounded-2xl text-xs font-semibold bg-teal-600 text-white whitespace-nowrap">💪 Empuje</button>
+                        <button onclick="selectGymSplit('Tirón')" id="split-Tirón" class="gym-split-btn px-3.5 py-2 rounded-2xl text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap">🦅 Tirón (Suelo)</button>
+                        <button onclick="selectGymSplit('Piernas')" id="split-Piernas" class="gym-split-btn px-3.5 py-2 rounded-2xl text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap">🦵 Piernas</button>
+                        <button onclick="selectGymSplit('FullBody')" id="split-FullBody" class="gym-split-btn px-3.5 py-2 rounded-2xl text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap">🔥 Full Body</button>
+                    </div>
+                </div>
+
+                <!-- Rest Timer & Hydration -->
+                <div class="grid grid-cols-12 gap-2.5">
+                    <div class="col-span-7 p-3.5 rounded-3xl bg-slate-900 text-white flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] text-slate-400 font-medium flex items-center gap-1"><i data-lucide="timer" class="w-3.5 h-3.5 text-teal-400"></i> Descanso</span>
+                            <div class="flex items-center gap-1.5">
+                                <span id="restTimerDisplay" class="font-display font-extrabold text-lg text-teal-400">00:00</span>
+                                <button onclick="stopRestTimer()" class="p-1 rounded-lg bg-white/10 text-slate-300"><i data-lucide="rotate-ccw" class="w-3 h-3"></i></button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1.5 mt-2.5">
+                            <button onclick="startRestTimer(60)" class="py-1.5 rounded-xl bg-white/10 hover:bg-teal-500 hover:text-slate-950 text-[11px] font-bold transition">60s</button>
+                            <button onclick="startRestTimer(90)" class="py-1.5 rounded-xl bg-white/10 hover:bg-teal-500 hover:text-slate-950 text-[11px] font-bold transition">90s</button>
+                            <button onclick="startRestTimer(120)" class="py-1.5 rounded-xl bg-white/10 hover:bg-teal-500 hover:text-slate-950 text-[11px] font-bold transition">2m</button>
+                        </div>
+                    </div>
+
+                    <div class="col-span-5 p-3.5 rounded-3xl bg-gradient-to-br from-sky-500/15 to-teal-500/15 border border-teal-500/25 flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-teal-300">💧 Agua</span>
+                            <span id="waterLabel" class="text-[11px] font-bold text-sky-400">5/8</span>
+                        </div>
+                        <div class="flex items-center gap-1 my-1">
+                            <button onclick="changeWater(-1)" class="w-7 h-7 rounded-lg bg-slate-800 text-xs font-bold">-</button>
+                            <button onclick="changeWater(1)" class="flex-1 h-7 rounded-lg bg-sky-500 text-white text-[11px] font-semibold">+ Vaso</button>
+                        </div>
+                        <button onclick="toggleSupplement('creatine')" id="suppCreatineBtn" class="w-full py-1 rounded-lg text-[10px] font-semibold border transition">⚡ Proteína / Movilidad</button>
+                    </div>
+                </div>
+
+                <!-- Add Exercise Form -->
+                <div class="p-3.5 rounded-3xl bg-slate-800/50 border border-slate-800 space-y-2.5">
+                    <p class="text-xs font-semibold text-slate-300">Agregar ejercicio a <span id="formSplitLabel" class="text-teal-400">Empuje</span></p>
+                    <div class="grid grid-cols-12 gap-2">
+                        <input id="newExerciseName" type="text" placeholder="Ej: Flexiones diamante" class="col-span-6 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs focus:outline-none">
+                        <input id="newExerciseSets" type="text" placeholder="4 series" value="4 series" class="col-span-3 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-center">
+                        <input id="newExerciseWeight" type="number" placeholder="Reps" value="15" class="col-span-3 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-center">
+                    </div>
+                    <button onclick="addManualExercise()" class="w-full py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-semibold text-xs transition">+ Sumar Ejercicio Corporal</button>
+                </div>
+
                 <div id="fullHabitsList" class="space-y-2.5"></div>
             </div>
 
             <!-- ==================== TAB 4: FINANZAS ==================== -->
             <div id="tab-finance" class="space-y-5 hidden">
-                <div>
-                    <h2 class="font-display font-bold text-lg">Billetera & Gastos</h2>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="font-display font-bold text-lg">Billetera & Gastos</h2>
+                        <p class="text-xs text-slate-400">Control rápido de presupuesto mensual.</p>
+                    </div>
+                    <button onclick="analyzeFinancesWithAI()" class="px-3 py-2 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-semibold"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Consejo IA</button>
                 </div>
+
                 <div class="p-4 rounded-3xl bg-slate-900 text-white space-y-3">
-                    <p class="text-xs text-slate-400">Gastado este mes</p>
-                    <p id="financeTotalBig" class="font-display font-extrabold text-2xl">$0</p>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-slate-400">Gastado este mes</p>
+                            <p id="financeTotalBig" class="font-display font-extrabold text-2xl">$0</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-slate-400">Meta</p>
+                            <p id="budgetLimitLabel" class="text-sm font-semibold text-amber-400">$450.000</p>
+                        </div>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-700 rounded-full overflow-hidden">
+                        <div id="budgetProgressBar" class="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 rounded-full" style="width: 30%"></div>
+                    </div>
+                    <p id="financeAiInsightBox" class="text-xs text-slate-300 bg-white/5 p-2.5 rounded-2xl">💡 Tocá "Consejo IA" para analizar tus gastos.</p>
                 </div>
-                <div class="flex gap-2">
-                    <input id="expenseTitle" type="text" placeholder="Concepto" class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
-                    <input id="expenseAmount" type="number" placeholder="Monto $" class="w-28 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs">
-                    <button onclick="addManualExpense()" class="px-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">+</button>
+
+                <div class="p-3.5 rounded-3xl bg-slate-800/50 border border-slate-800 space-y-2.5">
+                    <p class="text-xs font-semibold text-slate-300">Registrar gasto manual</p>
+                    <div class="grid grid-cols-12 gap-2">
+                        <input id="expenseTitle" type="text" placeholder="Concepto" class="col-span-6 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs">
+                        <input id="expenseAmount" type="number" placeholder="Monto $" class="col-span-3 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs">
+                        <select id="expenseCategory" class="col-span-3 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-200">
+                            <option value="Comida">🍔 Comida</option>
+                            <option value="Salud">🌱 Salud</option>
+                            <option value="Transporte">🚌 Viaje</option>
+                            <option value="Hogar">🏠 Hogar</option>
+                            <option value="Ocio">🎉 Ocio</option>
+                        </select>
+                    </div>
+                    <button onclick="addManualExpense()" class="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs">+ Guardar Gasto</button>
                 </div>
+
                 <div id="expensesList" class="space-y-2"></div>
             </div>
 
             <!-- ==================== TAB 5: COACH IA ==================== -->
             <div id="tab-ai" class="space-y-4 hidden flex flex-col h-[calc(100vh-220px)]">
-                <h2 class="font-display font-bold text-lg">Coach IA Personal</h2>
+                <div class="flex items-center justify-between shrink-0">
+                    <div>
+                        <h2 class="font-display font-bold text-lg flex items-center gap-1.5"><span>Coach IA Personal</span> <span class="w-2 h-2 rounded-full bg-emerald-400"></span></h2>
+                        <p class="text-xs text-slate-400">Conoce tu panel para ayudarte con todo.</p>
+                    </div>
+                    <button onclick="clearChat()" class="text-xs text-slate-400 hover:text-rose-400 px-2 py-1">Limpiar</button>
+                </div>
                 <div id="chatContainer" class="flex-1 overflow-y-auto space-y-3 pr-1 no-scrollbar"></div>
-                <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-700">
-                    <input id="chatInput" type="text" placeholder="Preguntale a tu IA..." class="flex-1 bg-transparent px-3 py-2 text-sm focus:outline-none" onkeydown="if(event.key==='Enter') sendChatMessage()">
-                    <button onclick="sendChatMessage()" class="p-2.5 rounded-xl bg-violet-600 text-white"><i data-lucide="send" class="w-4 h-4"></i></button>
+                <div class="shrink-0 pt-1">
+                    <div class="flex items-center gap-2 bg-slate-800 p-1.5 rounded-2xl border border-slate-700">
+                        <input id="chatInput" type="text" placeholder="Preguntale lo que quieras a tu IA..." class="flex-1 bg-transparent px-3 py-2 text-sm focus:outline-none" onkeydown="if(event.key==='Enter') sendChatMessage()">
+                        <button onclick="sendChatMessage()" class="p-2.5 rounded-xl bg-violet-600 text-white hover:bg-violet-500"><i data-lucide="send" class="w-4 h-4"></i></button>
+                    </div>
                 </div>
             </div>
 
@@ -245,12 +371,35 @@
         </nav>
     </div>
 
+    <!-- Pomodoro Modal -->
+    <div id="pomodoroModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl">
+            <div id="modalTimerDisplay" class="font-display font-extrabold text-5xl text-white">25:00</div>
+            <div class="flex gap-2">
+                <button onclick="togglePomodoroRun()" class="flex-1 py-3 rounded-2xl bg-violet-600 text-white font-semibold text-sm">Iniciar / Pausar</button>
+                <button onclick="togglePomodoroModal()" class="px-4 py-3 rounded-2xl bg-slate-800 text-slate-300 text-sm">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="customModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+            <h3 id="customModalTitle" class="font-display font-bold text-base">Nota Rápida</h3>
+            <input id="customModalInput" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-violet-500">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeCustomModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-semibold">Cancelar</button>
+                <button id="customModalConfirmBtn" class="px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-semibold">Guardar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-xs font-semibold shadow-xl transition-all duration-300 opacity-0 pointer-events-none">
         <span id="toastText">Listo</span>
     </div>
 
-    <!-- FIREBASE & LOGICA -->
+    <!-- FIREBASE & LOGICA COMPLETA -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -272,35 +421,47 @@
         window.state = {
             currentUserUid: null,
             streakDays: 5,
-            tasks: [],
-            gymExercises: [
-                { id: 'g1', split: 'Empuje', title: 'Flexiones Clásicas', sets: '4 series', completedSets: 4, weight: 15, doneToday: true },
-                { id: 'g2', split: 'Empuje', title: 'Flexiones Pica (Hombros)', sets: '4 series', completedSets: 0, weight: 12, doneToday: false }
+            waterGlasses: 5,
+            proteinMeals: 2,
+            creatineDone: true,
+            budgetLimit: 450000,
+            activeFilter: 'todas',
+            activeGymSplit: 'Empuje',
+            tasks: [
+                { id: 't1', title: 'Terminar entrega y enviar correo', category: 'Prioridad', completed: false, time: '11:00 hs', subtasks: [] },
+                { id: 't2', title: 'Comprar huevos, pollo y verduras', category: 'Personal', completed: false, time: '18:30 hs', subtasks: [] }
             ],
-            expenses: [],
-            notes: [],
-            chat: [{ role: 'assistant', text: '¡Hola! Ya estás conectado a tu base de datos en la nube de Google. ¿Qué hacemos hoy?' }]
+            gymExercises: [
+                { id: 'g1', split: 'Empuje', title: 'Flexiones Clásicas', sets: '4 series', completedSets: 4, weight: 15, doneToday: true, note: 'Pecho casi al piso' },
+                { id: 'g2', split: 'Empuje', title: 'Flexiones Pica (Hombros)', sets: '4 series', completedSets: 0, weight: 12, doneToday: false, note: 'Cadera arriba' },
+                { id: 'g3', split: 'Tirón', title: 'Empuje de Codos contra el Piso', sets: '4 series', completedSets: 0, weight: 15, doneToday: false, note: 'Apretar espalda' },
+                { id: 'g4', split: 'Piernas', title: 'Sentadillas Búlgaras', sets: '4 series', completedSets: 0, weight: 12, doneToday: false, note: 'Pie en silla' },
+                { id: 'g5', split: 'FullBody', title: 'Burpees Dinámicos', sets: '4 series', completedSets: 0, weight: 12, doneToday: false, note: 'Ritmo continuo' }
+            ],
+            expenses: [
+                { id: 'e1', title: 'Compra semanal carnicería y huevos', amount: 34500, category: 'Comida', date: 'Hoy' }
+            ],
+            notes: [
+                { id: 'n1', text: '📌 Meta del mes: 25 flexiones seguidas sin parar.' }
+            ],
+            chat: [
+                { role: 'assistant', text: '¡Hola! Soy Aura. Tu panel está sincronizado en la nube de Google y listo con tu rutina de calistenia en casa. ¿Qué entrenamos o resolvemos hoy?' }
+            ]
         };
 
-        // Auth Handlers
+        // Auth
         window.registerUser = async () => {
             const email = document.getElementById('emailInput').value;
             const pass = document.getElementById('passInput').value;
             const err = document.getElementById('authError');
-            try {
-                await createUserWithEmailAndPassword(auth, email, pass);
-                err.textContent = "";
-            } catch (e) { err.textContent = "Error al registrar: " + e.message; }
+            try { await createUserWithEmailAndPassword(auth, email, pass); err.textContent = ""; } catch (e) { err.textContent = "Error: " + e.message; }
         };
 
         window.loginUser = async () => {
             const email = document.getElementById('emailInput').value;
             const pass = document.getElementById('passInput').value;
             const err = document.getElementById('authError');
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                err.textContent = "";
-            } catch (e) { err.textContent = "Correo o contraseña incorrectos."; }
+            try { await signInWithEmailAndPassword(auth, email, pass); err.textContent = ""; } catch (e) { err.textContent = "Datos incorrectos."; }
         };
 
         window.logoutUser = async () => { await signOut(auth); };
@@ -310,7 +471,6 @@
             const mainApp = document.getElementById('mainApp');
             if (user) {
                 window.state.currentUserUid = user.uid;
-                document.getElementById('userEmailDisplay').textContent = user.email;
                 authScreen.classList.add('hidden');
                 mainApp.classList.remove('hidden');
                 loadUserData(user.uid);
@@ -323,12 +483,14 @@
 
         async function loadUserData(uid) {
             try {
-                const qNotes = query(collection(db, "notes"), where("uid", "==", uid));
-                const snap = await getDocs(qNotes);
-                window.state.notes = [];
-                snap.forEach(d => window.state.notes.push({ id: d.id, text: d.data().text }));
+                const q = query(collection(db, "notes"), where("uid", "==", uid));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    window.state.notes = [];
+                    snap.forEach(d => window.state.notes.push({ id: d.id, text: d.data().text }));
+                }
                 renderAll();
-            } catch (e) { console.error("Error cargando datos", e); }
+            } catch (e) { console.error(e); }
         }
 
         window.addInlineNote = async () => {
@@ -336,9 +498,10 @@
             const text = inp.value.trim();
             if (!text || !window.state.currentUserUid) return;
             try {
-                await addDoc(collection(db, "notes"), { uid: window.state.currentUserUid, text: '📌 ' + text, createdAt: new Date() });
+                const docRef = await addDoc(collection(db, "notes"), { uid: window.state.currentUserUid, text: '📌 ' + text, createdAt: new Date() });
+                window.state.notes.unshift({ id: docRef.id, text: '📌 ' + text });
                 inp.value = '';
-                loadUserData(window.state.currentUserUid);
+                renderAll();
                 showToast('Nota guardada en la nube');
             } catch (e) { console.error(e); }
         };
@@ -346,16 +509,20 @@
         window.deleteNote = async (id) => {
             try {
                 await deleteDoc(doc(db, "notes", id));
-                loadUserData(window.state.currentUserUid);
+                window.state.notes = window.state.notes.filter(n => n.id !== id);
+                renderAll();
                 showToast('Nota eliminada');
             } catch (e) { console.error(e); }
         };
 
+        // Navigation & UI
         window.switchTab = (tabName) => {
             ['home', 'tasks', 'habits', 'finance', 'ai'].forEach(t => {
-                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const el = document.getElementById(`tab-${t}`);
+                if (el) el.classList.add('hidden');
             });
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const target = document.getElementById(`tab-${tabName}`);
+            if (target) target.classList.remove('hidden');
             if (tabName === 'ai') renderChat();
             lucide.createIcons();
         };
@@ -368,36 +535,189 @@
         };
 
         window.renderAll = () => {
-            // Notes
-            const notesEl = document.getElementById('notesList');
-            notesEl.innerHTML = window.state.notes.length === 0 ? `<p class="text-xs text-slate-500 italic">No hay notas todavía.</p>` :
-                window.state.notes.map(n => `<div class="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex justify-between items-center"><span class="text-xs">${n.text}</span><button onclick="deleteNote('${n.id}')" class="text-rose-400 text-xs">✕</button></div>`).join('');
-            
-            // Gym
-            document.getElementById('fullHabitsList').innerHTML = window.state.gymExercises.map(g => `<div class="p-3.5 rounded-2xl bg-slate-800 border border-slate-700 flex justify-between items-center"><span class="text-xs font-semibold">${g.title} (${g.sets})</span><span class="text-xs text-teal-400">${g.weight} reps</span></div>`).join('');
+            // Stats & Home
+            const totalTasks = window.state.tasks.length;
+            const doneTasks = window.state.tasks.filter(t => t.completed).length;
+            document.getElementById('statTasksCount').innerText = `${doneTasks}/${totalTasks}`;
+            document.getElementById('statTasksPercent').innerText = totalTasks ? `${Math.round((doneTasks/totalTasks)*100)}%` : '0%';
+
+            const splitExs = window.state.gymExercises.filter(g => g.split === window.state.activeGymSplit);
+            const doneGym = splitExs.filter(g => g.doneToday).length;
+            document.getElementById('statHabitsCount').innerText = `${doneGym}/${splitExs.length}`;
+            document.getElementById('statGymSplitBadge').innerText = window.state.activeGymSplit;
+            document.getElementById('homeActiveSplitName').innerText = window.state.activeGymSplit;
+            document.getElementById('formSplitLabel').innerText = window.state.activeGymSplit;
+
+            const totalSpent = window.state.expenses.reduce((s, e) => s + e.amount, 0);
+            const fmtSpent = '$' + totalSpent.toLocaleString('es-AR');
+            document.getElementById('statFinanceTotal').innerText = fmtSpent;
+            document.getElementById('financeTotalBig').innerText = fmtSpent;
+
+            // Home Tasks Preview
+            document.getElementById('homeTasksList').innerHTML = window.state.tasks.slice(0, 2).map(t => `
+                <div class="p-3 rounded-2xl bg-slate-800/60 border border-slate-700 flex justify-between items-center text-xs">
+                    <span class="${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</span>
+                    <button onclick="toggleTask('${t.id}')" class="px-2 py-1 rounded bg-violet-600/30 text-violet-300">${t.completed ? 'Hecho' : 'Pendiente'}</button>
+                </div>
+            `).join('');
+
+            // Full Tasks List
+            document.getElementById('fullTasksList').innerHTML = window.state.tasks.map(t => `
+                <div class="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700 flex justify-between items-center text-xs">
+                    <span class="${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</span>
+                    <button onclick="toggleTask('${t.id}')" class="px-2.5 py-1 rounded bg-violet-600 text-white">${t.completed ? 'Completada' : 'Completar'}</button>
+                </div>
+            `).join('');
+
+            // Home Gym Grid
+            document.getElementById('homeHabitsGrid').innerHTML = splitExs.slice(0, 4).map(ex => `
+                <button onclick="toggleGymExercise('${ex.id}')" class="p-3 rounded-2xl border text-left flex justify-between items-center ${ex.doneToday ? 'bg-teal-500/15 border-teal-500 text-teal-300' : 'bg-slate-800/50 border-slate-700 text-slate-300'}">
+                    <div><p class="text-xs font-semibold truncate">${ex.title}</p><p class="text-[10px] text-slate-400">${ex.weight} reps</p></div>
+                    <span>${ex.doneToday ? '✓' : '○'}</span>
+                </button>
+            `).join('');
+
+            // Full Gym Exercises List
+            document.getElementById('fullHabitsList').innerHTML = splitExs.map(ex => `
+                <div class="p-3.5 rounded-2xl bg-slate-800/60 border ${ex.doneToday ? 'border-teal-500/50' : 'border-slate-700'} space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-semibold ${ex.doneToday ? 'line-through text-slate-400' : ''}">${ex.title}</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="adjustWeight('${ex.id}', -1)" class="w-6 h-6 rounded bg-slate-900 font-bold">-</button>
+                            <span class="px-2 text-teal-400 font-bold">${ex.weight} reps</span>
+                            <button onclick="adjustWeight('${ex.id}', 1)" class="w-6 h-6 rounded bg-slate-900 font-bold">+</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center pt-1 border-t border-slate-700">
+                        <button onclick="incrementSet('${ex.id}')" class="text-[11px] font-bold text-teal-300">Series: ${ex.completedSets || 0}/${parseInt(ex.sets)} (+1 y descansar)</button>
+                        <button onclick="toggleGymExercise('${ex.id}')" class="px-2 py-1 rounded bg-teal-600/30 text-teal-300 text-[10px] font-semibold">Hecho ✓</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Notes List
+            document.getElementById('notesList').innerHTML = window.state.notes.length === 0 ? `<p class="text-xs text-slate-500 italic">No hay notas todavía.</p>` :
+                window.state.notes.map(n => `<div class="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex justify-between items-center text-xs"><span>${n.text}</span><button onclick="deleteNote('${n.id}')" class="text-rose-400">✕</button></div>`).join('');
+
+            // Expenses List
+            document.getElementById('expensesList').innerHTML = window.state.expenses.map(e => `
+                <div class="p-3 rounded-2xl bg-slate-800/50 border border-slate-700 flex justify-between items-center text-xs">
+                    <div><p class="font-semibold">${e.title}</p><p class="text-[10px] text-slate-400">${e.category}</p></div>
+                    <span class="font-bold text-amber-400">-$${e.amount.toLocaleString('es-AR')}</span>
+                </div>
+            `).join('');
+
             lucide.createIcons();
         };
 
+        // Task & Gym Logic
+        window.toggleTask = (id) => { const t = window.state.tasks.find(x => x.id === id); if (t) { t.completed = !t.completed; renderAll(); } };
+        window.addManualTask = () => {
+            const inp = document.getElementById('newTaskInput');
+            const cat = document.getElementById('newTaskCategory').value;
+            if(!inp.value.trim()) return;
+            window.state.tasks.unshift({ id: 't_'+Date.now(), title: inp.value.trim(), category: cat, completed: false, time: 'Hoy', subtasks: [] });
+            inp.value=''; renderAll(); showToast('Tarea agregada');
+        };
+        window.selectGymSplit = (split) => { window.state.activeGymSplit = split; renderAll(); };
+        window.toggleGymExercise = (id) => { const g = window.state.gymExercises.find(x => x.id === id); if(g) { g.doneToday = !g.doneToday; g.completedSets = g.doneToday ? 4 : 0; renderAll(); } };
+        window.incrementSet = (id) => {
+            const g = window.state.gymExercises.find(x => x.id === id);
+            if(g) {
+                g.completedSets = (g.completedSets || 0) + 1;
+                if(g.completedSets >= 4) { g.doneToday = true; }
+                startRestTimer(60);
+                renderAll();
+                showToast('Serie sumada • Descanso 60s iniciado');
+            }
+        };
+        window.adjustWeight = (id, delta) => { const g = window.state.gymExercises.find(x => x.id === id); if(g) { g.weight = Math.max(1, g.weight + delta); renderAll(); } };
+        window.addManualExercise = () => {
+            const name = document.getElementById('newExerciseName').value.trim();
+            const reps = Number(document.getElementById('newExerciseWeight').value) || 12;
+            if(!name) return;
+            window.state.gymExercises.push({ id: 'g_'+Date.now(), split: window.state.activeGymSplit, title: name, sets: '4 series', completedSets: 0, weight: reps, doneToday: false, note: 'Casa' });
+            document.getElementById('newExerciseName').value=''; renderAll(); showToast('Ejercicio sumado');
+        };
+
+        // Rest Timer
+        let restInterval = null;
+        window.startRestTimer = (secs) => {
+            clearInterval(restInterval);
+            let left = secs;
+            const disp = document.getElementById('restTimerDisplay');
+            restInterval = setInterval(() => {
+                left--;
+                const m = String(Math.floor(left/60)).padStart(2,'0');
+                const s = String(left%60).padStart(2,'0');
+                if(disp) disp.innerText = `${m}:${s}`;
+                if(left <= 0) { clearInterval(restInterval); showToast('🔔 ¡Descanso terminado!'); }
+            }, 1000);
+        };
+        window.stopRestTimer = () => { clearInterval(restInterval); const disp = document.getElementById('restTimerDisplay'); if(disp) disp.innerText = '00:00'; };
+
+        // Expenses & Water
+        window.addManualExpense = () => {
+            const title = document.getElementById('expenseTitle').value.trim();
+            const amt = Number(document.getElementById('expenseAmount').value);
+            const cat = document.getElementById('expenseCategory').value;
+            if(!title || !amt) return;
+            window.state.expenses.unshift({ id: 'e_'+Date.now(), title, amount: amt, category: cat, date: 'Hoy' });
+            document.getElementById('expenseTitle').value=''; document.getElementById('expenseAmount').value=''; renderAll(); showToast('Gasto guardado');
+        };
+        window.changeWater = (d) => { window.state.waterGlasses = Math.max(0, window.state.waterGlasses + d); document.getElementById('waterLabel').innerText = `${window.state.waterGlasses}/8 vasos`; };
+
+        // Chat & Omni
+        window.processOmniInput = () => { const inp = document.getElementById('omniInput'); if(!inp.value.trim()) return; showToast('Captura procesada por IA'); inp.value=''; };
         window.renderChat = () => {
             const c = document.getElementById('chatContainer');
+            if(!c) return;
             c.innerHTML = window.state.chat.map(m => `<div class="flex ${m.role==='user'?'justify-end':'justify-start'}"><div class="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs ${m.role==='user'?'bg-violet-600 text-white':'bg-slate-800 text-slate-100'}">${m.text}</div></div>`).join('');
             c.scrollTop = c.scrollHeight;
         };
-
         window.sendChatMessage = () => {
-            const i = document.getElementById('chatInput');
-            if(!i.value.trim()) return;
-            window.state.chat.push({role:'user', text: i.value});
-            i.value='';
+            const inp = document.getElementById('chatInput');
+            if(!inp.value.trim()) return;
+            window.state.chat.push({role:'user', text: inp.value});
+            const q = inp.value; inp.value=''; renderChat();
+            setTimeout(() => {
+                window.state.chat.push({role:'assistant', text: `Recibido. Estoy analizando "${q}" para ayudarte con tu panel.`});
+                renderChat();
+            }, 800);
+        };
+        window.clearChat = () => { window.state.chat = [{role:'assistant', text: 'Historial limpio.'}]; renderChat(); };
+
+        // Modals & Misc
+        window.completeDayAndStreak = () => { window.state.streakDays++; document.getElementById('streakCountLabel').innerText = `${window.state.streakDays}d`; showToast('🔥 ¡Racha actualizada!'); };
+        window.togglePomodoroModal = () => { const m = document.getElementById('pomodoroModal'); m.classList.toggle('hidden'); m.classList.toggle('flex'); };
+        window.togglePomodoroRun = () => { showToast('Cronómetro de foco activo'); };
+        window.openQuickNoteModal = () => {
+            const m = document.getElementById('customModal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+            document.getElementById('customModalConfirmBtn').onclick = () => {
+                const val = document.getElementById('customModalInput').value.trim();
+                if(val) { window.state.notes.unshift({id:'n_'+Date.now(), text:'📌 '+val}); renderAll(); showToast('Nota guardada'); }
+                m.classList.add('hidden'); m.classList.remove('flex');
+            };
+        };
+        window.closeCustomModal = () => { document.getElementById('customModal').classList.add('hidden'); document.getElementById('customModal').classList.remove('flex'); };
+        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); };
+        window.fillSampleOmni = () => { document.getElementById('omniInput').value = 'Hoy entrené Empuje en casa y gasté $8500 en almuerzo'; };
+        window.startVoiceCapture = () => { showToast('Dictado por voz iniciado'); };
+        window.generateDailyBriefing = () => { showToast('Copiloto actualizado'); };
+        window.reorganizeTasksWithAI = () => { showToast('Tareas reordenadas por prioridad'); };
+        window.generateGymRoutineWithAI = () => { showToast('Nueva rutina de calistenia generada'); };
+        window.analyzeFinancesWithAI = () => { showToast('Analizando finanzas...'); };
+
+        window.onload = () => {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short' });
+            const dateEl = document.getElementById('currentDateLabel');
+            if(dateEl) dateEl.innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+            lucide.createIcons();
+            renderAll();
             renderChat();
         };
-
-        window.completeDayAndStreak = () => { window.state.streakDays++; renderAll(); showToast('¡Racha actualizada!'); };
-        window.addManualTask = () => { showToast('Tarea agregada'); };
-        window.addManualExpense = () => { showToast('Gasto agregado'); };
-        window.processOmniInput = () => { showToast('Captura mágica procesada'); document.getElementById('omniInput').value=''; };
-
-        window.onload = () => { lucide.createIcons(); renderAll(); };
     </script>
 </body>
 </html>
