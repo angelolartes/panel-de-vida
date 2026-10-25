@@ -398,7 +398,6 @@
                         uid: currentUser.uid,
                         nickname: nick,
                         score: 0,
-                        roundScore: 0,
                         answers: {},
                         submitted: false
                     }
@@ -462,7 +461,6 @@
                         uid: currentUser.uid,
                         nickname: nick,
                         score: 0,
-                        roundScore: 0,
                         answers: {},
                         submitted: false
                     };
@@ -564,11 +562,9 @@
             if (!snap.exists()) return;
             const room = snap.data();
 
-            // Reset scores for all players on new game
             const players = room.players || {};
             Object.keys(players).forEach(uid => {
                 players[uid].score = 0;
-                players[uid].roundScore = 0;
                 players[uid].answers = {};
                 players[uid].submitted = false;
             });
@@ -644,19 +640,19 @@
                 players[currentUser.uid].answers = answers;
                 players[currentUser.uid].submitted = true;
 
-                // Comprobar si todos ya enviaron o terminó el tiempo
+                // Verificar si todos ya enviaron para calcular puntos de la ronda
                 let allSubmitted = true;
                 Object.values(players).forEach(p => {
                     if (!p.submitted) allSubmitted = false;
                 });
 
-                // Si todos enviaron, calculamos los puntos con las reglas (5 si se repite, 10 si es única)
-                if (allSubmitted || true) { // Se evalúa al presionar alto el fuego
+                if (allSubmitted || true) {
                     const letter = room.activeLetter;
 
-                    // Mapeo para contar frecuencias de respuestas por categoría
+                    // Calcular puntaje de esta ronda para cada categoría
                     CATEGORIES.forEach(cat => {
                         const wordCount = {};
+                        // Contar cuántas veces se repite cada palabra válida en esta categoría
                         Object.values(players).forEach(p => {
                             const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
                             if (word && word.startsWith(letter)) {
@@ -664,23 +660,17 @@
                             }
                         });
 
-                        // Asignar puntajes por categoría para cada jugador
+                        // Asignar puntos por categoría
                         Object.values(players).forEach(p => {
                             const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
                             if (word && word.startsWith(letter)) {
                                 if (wordCount[word] > 1) {
-                                    p.roundScore = (p.roundScore || 0) + 5; // Repetida = 5 pts
+                                    p.score = (p.score || 0) + 5;  // Repetida = 5 pts
                                 } else {
-                                    p.roundScore = (p.roundScore || 0) + 10; // Única = 10 pts
+                                    p.score = (p.score || 0) + 10; // Única = 10 pts
                                 }
                             }
                         });
-                    });
-
-                    // Sumar el puntaje de la ronda al puntaje total acumulado
-                    Object.values(players).forEach(p => {
-                        p.score = (p.score || 0) + (p.roundScore || 0);
-                        p.roundScore = 0; // limpiar para la siguiente ronda
                     });
                 }
 
@@ -720,7 +710,6 @@
             const container = document.getElementById('scoresListContainer');
             container.innerHTML = '';
 
-            // Ordenar jugadores por puntaje total de mayor a menor para el ranking
             const sortedPlayers = Object.values(players).sort((a, b) => (b.score || 0) - (a.score || 0));
 
             sortedPlayers.forEach((p, index) => {
@@ -779,7 +768,6 @@
             const players = room.players || {};
             Object.values(players).forEach(p => {
                 p.score = 0;
-                p.roundScore = 0;
                 p.submitted = false;
                 p.answers = {};
             });
