@@ -181,20 +181,20 @@
             </button>
         </div>
 
-        <!-- Vista 5: Puntajes y Revisión -->
+        <!-- Vista 5: Puntajes y Podio Final -->
         <div id="scoresView" class="hidden w-full max-w-xl bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl text-center">
             <div class="inline-block p-4 rounded-full bg-gradient-to-tr from-yellow-400 to-amber-600 mb-4 shadow-xl">
                 <i class="fa-solid fa-trophy text-4xl text-white"></i>
             </div>
-            <h2 class="text-3xl font-extrabold mb-2">Puntajes de la Ronda</h2>
-            <p class="text-purple-200 mb-6 text-sm">Respuestas enviadas y puntos acumulados.</p>
+            <h2 id="scoresTitle" class="text-3xl font-extrabold mb-2">Puntajes de la Ronda</h2>
+            <p id="scoresSubtitle" class="text-purple-200 mb-6 text-sm">Respuestas enviadas y puntos acumulados.</p>
 
             <div id="scoresListContainer" class="bg-black/30 rounded-2xl p-4 mb-8 border border-white/10 space-y-4 max-h-60 overflow-y-auto text-left">
                 <!-- Dinámico -->
             </div>
 
-            <div id="hostNextContainer" class="hidden">
-                <button onclick="nextRound()" class="w-full py-4 bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 font-bold text-lg rounded-xl shadow-lg transition">
+            <div id="hostNextContainer" class="hidden space-y-3">
+                <button id="nextRoundBtn" onclick="nextRound()" class="w-full py-4 bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 font-bold text-lg rounded-xl shadow-lg transition">
                     Siguiente Ronda <i class="fa-solid fa-arrow-right ml-2"></i>
                 </button>
             </div>
@@ -398,6 +398,7 @@
                         uid: currentUser.uid,
                         nickname: nick,
                         score: 0,
+                        roundScore: 0,
                         answers: {},
                         submitted: false
                     }
@@ -412,7 +413,7 @@
                 enterLobby(roomCode);
             } catch (e) {
                 console.error(e);
-                showModal("Error", "No se pudo crear la sala en Firestore. Revisa las reglas de seguridad.");
+                showModal("Error", "No se pudo crear la sala en Firestore.");
             }
         };
 
@@ -461,6 +462,7 @@
                         uid: currentUser.uid,
                         nickname: nick,
                         score: 0,
+                        roundScore: 0,
                         answers: {},
                         submitted: false
                     };
@@ -529,7 +531,9 @@
             const status = room.status;
             const isHost = room.hostUid === currentUser.uid;
 
-            if (status === 'roulette') {
+            if (status === 'lobby') {
+                switchView('lobbyView');
+            } else if (status === 'roulette') {
                 switchView('rouletteView');
                 document.getElementById('rouletteRoundNum').innerText = room.currentRound;
                 document.getElementById('rouletteBox').innerText = room.activeLetter || '?';
@@ -556,12 +560,26 @@
             const time = parseInt(document.getElementById('lobbyTime').value);
 
             const roomRef = doc(db, 'rooms', currentRoomId);
+            const snap = await getDoc(roomRef);
+            if (!snap.exists()) return;
+            const room = snap.data();
+
+            // Reset scores for all players on new game
+            const players = room.players || {};
+            Object.keys(players).forEach(uid => {
+                players[uid].score = 0;
+                players[uid].roundScore = 0;
+                players[uid].answers = {};
+                players[uid].submitted = false;
+            });
+
             await updateDoc(roomRef, {
                 rounds: rounds,
                 timePerRound: time,
                 currentRound: 1,
                 status: 'roulette',
-                activeLetter: ''
+                activeLetter: '',
+                players: players
             });
         };
 
@@ -616,35 +634,79 @@
                 answers[cat] = el ? el.value.trim().toUpperCase() : '';
             });
 
-            const letter = document.getElementById('activeLetter').innerText;
-            let roundPts = 0;
-            CATEGORIES.forEach(cat => {
-                const ans = answers[cat];
-                if (ans && ans.startsWith(letter)) {
-                    roundPts += 10;
-                }
-            });
-
             const roomRef = doc(db, 'rooms', currentRoomId);
             const snap = await getDoc(roomRef);
-            if (snap.exists()) {
-                const room = snap.data();
-                if (room.players && room.players[currentUser.uid]) {
-                    room.players[currentUser.uid].answers = answers;
-                    room.players[currentUser.uid].score = (room.players[currentUser.uid].score || 0) + roundPts;
-                    room.players[currentUser.uid].submitted = true;
+            if (!snap.exists()) return;
+            const room = snap.data();
+            const players = room.players || {};
 
-                    await updateDoc(roomRef, {
-                        players: room.players,
-                        status: 'scores'
+            if (players[currentUser.uid]) {
+                players[currentUser.uid].answers = answers;
+                players[currentUser.uid].submitted = true;
+
+                // Comprobar si todos ya enviaron o terminó el tiempo
+                let allSubmitted = true;
+                Object.values(players).forEach(p => {
+                    if (!p.submitted) allSubmitted = false;
+                });
+
+                // Si todos enviaron, calculamos los puntos con las reglas (5 si se repite, 10 si es única)
+                if (allSubmitted || true) { // Se evalúa al presionar alto el fuego
+                    const letter = room.activeLetter;
+
+                    // Mapeo para contar frecuencias de respuestas por categoría
+                    CATEGORIES.forEach(cat => {
+                        const wordCount = {};
+                        Object.values(players).forEach(p => {
+                            const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
+                            if (word && word.startsWith(letter)) {
+                                wordCount[word] = (wordCount[word] || 0) + 1;
+                            }
+                        });
+
+                        // Asignar puntajes por categoría para cada jugador
+                        Object.values(players).forEach(p => {
+                            const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
+                            if (word && word.startsWith(letter)) {
+                                if (wordCount[word] > 1) {
+                                    p.roundScore = (p.roundScore || 0) + 5; // Repetida = 5 pts
+                                } else {
+                                    p.roundScore = (p.roundScore || 0) + 10; // Única = 10 pts
+                                }
+                            }
+                        });
+                    });
+
+                    // Sumar el puntaje de la ronda al puntaje total acumulado
+                    Object.values(players).forEach(p => {
+                        p.score = (p.score || 0) + (p.roundScore || 0);
+                        p.roundScore = 0; // limpiar para la siguiente ronda
                     });
                 }
+
+                await updateDoc(roomRef, {
+                    players: players,
+                    status: 'scores'
+                });
             }
         };
 
         function showScoresScreen(room) {
             switchView('scoresView');
             const isHost = room.hostUid === currentUser.uid;
+            const isFinalRound = room.currentRound >= room.rounds;
+
+            if (isFinalRound) {
+                document.getElementById('scoresTitle').innerText = "🏆 ¡Podio de Ganadores!";
+                document.getElementById('scoresSubtitle').innerText = "Puntaje total acumulado de toda la partida.";
+                document.getElementById('nextRoundBtn').innerText = "Volver al Lobby / Nueva Partida";
+                document.getElementById('nextRoundBtn').setAttribute("onclick", "returnToLobby()");
+            } else {
+                document.getElementById('scoresTitle').innerText = "Puntajes de la Ronda";
+                document.getElementById('scoresSubtitle').innerText = "Respuestas y puntos acumulados.";
+                document.getElementById('nextRoundBtn').innerText = "Siguiente Ronda ➔";
+                document.getElementById('nextRoundBtn').setAttribute("onclick", "nextRound()");
+            }
 
             if (isHost) {
                 document.getElementById('hostNextContainer').classList.remove('hidden');
@@ -658,12 +720,23 @@
             const container = document.getElementById('scoresListContainer');
             container.innerHTML = '';
 
-            Object.values(players).forEach(p => {
+            // Ordenar jugadores por puntaje total de mayor a menor para el ranking
+            const sortedPlayers = Object.values(players).sort((a, b) => (b.score || 0) - (a.score || 0));
+
+            sortedPlayers.forEach((p, index) => {
+                let badge = "";
+                if (isFinalRound) {
+                    if (index === 0) badge = "🥇 1° Puesto - ";
+                    else if (index === 1) badge = "🥈 2° Puesto - ";
+                    else if (index === 2) badge = "🥉 3° Puesto - ";
+                    else badge = `${index + 1}° Puesto - `;
+                }
+
                 container.innerHTML += `
                     <div class="bg-white/5 p-4 rounded-xl border border-white/10">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="font-bold text-yellow-300 text-base"><i class="fa-solid fa-user-circle mr-2"></i>${p.nickname}</span>
-                            <span class="font-extrabold text-pink-400 text-lg">${p.score || 0} pts</span>
+                            <span class="font-bold text-yellow-300 text-base"><i class="fa-solid fa-user-circle mr-2"></i>${badge}${p.nickname}</span>
+                            <span class="font-extrabold text-pink-400 text-lg">${p.score || 0} pts totales</span>
                         </div>
                         <div class="text-xs text-purple-200 grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                             ${CATEGORIES.map(cat => `<div><span class="text-purple-400">${cat}:</span> ${p.answers && p.answers[cat] ? p.answers[cat] : '-'}</div>`).join('')}
@@ -680,15 +753,43 @@
             if (!snap.exists()) return;
             const room = snap.data();
 
+            const players = room.players || {};
+            Object.values(players).forEach(p => {
+                p.submitted = false;
+                p.answers = {};
+            });
+
             if (room.currentRound < room.rounds) {
                 await updateDoc(roomRef, {
                     currentRound: room.currentRound + 1,
                     status: 'roulette',
-                    activeLetter: ''
+                    activeLetter: '',
+                    players: players
                 });
-            } else {
-                showModal("¡Partida Finalizada!", "¡Se completaron todas las rondas!");
             }
+        };
+
+        window.returnToLobby = async function() {
+            if (!currentRoomId) return;
+            const roomRef = doc(db, 'rooms', currentRoomId);
+            const snap = await getDoc(roomRef);
+            if (!snap.exists()) return;
+            const room = snap.data();
+
+            const players = room.players || {};
+            Object.values(players).forEach(p => {
+                p.score = 0;
+                p.roundScore = 0;
+                p.submitted = false;
+                p.answers = {};
+            });
+
+            await updateDoc(roomRef, {
+                currentRound: 1,
+                status: 'lobby',
+                activeLetter: '',
+                players: players
+            });
         };
 
         window.copyRoomCode = function() {
