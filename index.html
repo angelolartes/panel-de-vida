@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura Life OS - Cloud</title>
+    <title>Aura Life OS - Sincronizado</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,83 +13,65 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
 
-    <!-- PANTALLA DE LOGIN / REGISTRO (Se muestra si no hay sesión) -->
-    <div id="authScreen" class="flex-1 flex flex-col justify-center items-center p-4 max-w-sm mx-auto w-full">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full space-y-4 shadow-xl">
-            <div class="text-center space-y-1">
-                <h1 class="font-bold text-xl text-indigo-400">⚡ Aura Life OS</h1>
-                <p class="text-xs text-slate-400">Iniciá sesión o creá tu cuenta</p>
-            </div>
-
-            <div class="space-y-3">
-                <input type="email" id="emailInput" placeholder="Correo electrónico" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm outline-none text-slate-200 focus:border-indigo-500 transition">
-                <input type="password" id="passInput" placeholder="Contraseña" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm outline-none text-slate-200 focus:border-indigo-500 transition">
-                
-                <div class="flex gap-2 pt-2">
-                    <button onclick="loginUser()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 rounded-lg transition shadow-lg shadow-indigo-600/30">Entrar</button>
-                    <button onclick="registerUser()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold py-2.5 rounded-lg transition">Registrarse</button>
-                </div>
-            </div>
-            <p id="authError" class="text-xs text-red-400 text-center h-4"></p>
+    <!-- HEADER / LOGIN DE GOOGLE -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center sticky top-0 z-50">
+        <div>
+            <h1 class="font-bold text-base text-indigo-400">⚡ Aura Life OS</h1>
+            <p class="text-xs text-slate-400 truncate max-w-[200px]" id="userStatus">Verificando sesión...</p>
         </div>
-    </div>
+        <div id="authContainer">
+            <button onclick="loginWithGoogle()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-lg shadow-indigo-600/30">
+                Acceder con Google
+            </button>
+        </div>
+    </header>
 
-    <!-- PANEL PRINCIPAL (Oculto hasta iniciar sesión) -->
-    <div id="mainApp" class="flex-1 flex flex-col hidden">
-        <!-- HEADER -->
-        <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
-            <div>
-                <h1 class="font-bold text-base text-indigo-400">⚡ Aura Life OS</h1>
-                <p class="text-xs text-slate-400" id="userEmailDisplay">Sincronizado</p>
+    <!-- CONTENIDO PRINCIPAL (Se muestra solo al loguearse) -->
+    <main id="mainApp" class="flex-1 p-4 max-w-md mx-auto w-full space-y-6 pb-24 hidden">
+        
+        <!-- Barra de Captura Mágica -->
+        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex gap-2 shadow-lg">
+            <input type="text" id="omniInput" placeholder="Ej: Mañana médico 16hs o gasté $4000..." class="bg-transparent flex-1 text-sm outline-none text-slate-200 placeholder-slate-500">
+            <button onclick="processOmni()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">✨ IA</button>
+        </div>
+
+        <!-- Sección Gym en Casa (Calistenia) -->
+        <section class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4 shadow-lg">
+            <div class="flex justify-between items-center">
+                <h2 class="font-semibold text-sm text-indigo-300">💪 Calistenia en Casa</h2>
+                <span class="text-xs bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-800/50">Sin barra / Sin peso</span>
             </div>
-            <button onclick="logoutUser()" class="bg-red-950/60 hover:bg-red-900/60 border border-red-800/50 text-red-300 text-xs px-3 py-1.5 rounded-lg transition">Salir</button>
-        </header>
-
-        <!-- CONTENIDO -->
-        <main class="flex-1 p-4 max-w-md mx-auto w-full space-y-6 pb-24">
-            <!-- Barra de Captura Mágica -->
-            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex gap-2 shadow-lg">
-                <input type="text" id="omniInput" placeholder="Ej: Mañana médico 16hs o gasté $4000..." class="bg-transparent flex-1 text-sm outline-none text-slate-200 placeholder-slate-500">
-                <button onclick="processOmni()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">✨ IA</button>
-            </div>
-
-            <!-- Sección Gym en Casa (Calistenia) -->
-            <section class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4 shadow-lg">
-                <div class="flex justify-between items-center">
-                    <h2 class="font-semibold text-sm text-indigo-300">💪 Calistenia en Casa</h2>
-                    <span class="text-xs bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-800/50">Sin barra / Sin peso</span>
-                </div>
-                
-                <div class="space-y-3">
-                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/60 space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-medium text-slate-200">Flexiones Clásicas</span>
-                            <span class="text-xs text-indigo-400 font-semibold" id="counter-flexiones">Series: 0/4</span>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="logSeries('Flexiones')" class="flex-1 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs py-1.5 rounded-lg font-medium transition">+1 Serie & Descanso</button>
-                            <button onclick="resetSeries('Flexiones')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg text-slate-300">↺</button>
-                        </div>
+            
+            <div class="space-y-3">
+                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/60 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-slate-200">Flexiones Clásicas</span>
+                        <span class="text-xs text-indigo-400 font-semibold" id="counter-flexiones">Series: 0/4</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="logSeries('Flexiones')" class="flex-1 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs py-1.5 rounded-lg font-medium transition">+1 Serie & Descanso</button>
+                        <button onclick="resetSeries('Flexiones')" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg text-slate-300">↺</button>
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <!-- Notas Rápidas -->
-            <section class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3 shadow-lg">
-                <h2 class="font-semibold text-sm text-indigo-300">📝 Notas y Recordatorios</h2>
-                <div class="flex gap-2">
-                    <input type="text" id="noteInput" placeholder="Escribir nota..." class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm flex-1 outline-none text-slate-200 placeholder-slate-500 focus:border-indigo-500 transition">
-                    <button onclick="saveNote()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-lg font-medium transition">Guardar</button>
-                </div>
-                <div id="notesList" class="space-y-2 text-xs text-slate-300 pt-1"></div>
-            </section>
-        </main>
-    </div>
+        <!-- Notas Rápidas -->
+        <section class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3 shadow-lg">
+            <h2 class="font-semibold text-sm text-indigo-300">📝 Notas y Recordatorios</h2>
+            <div class="flex gap-2">
+                <input type="text" id="noteInput" placeholder="Escribir nota..." class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm flex-1 outline-none text-slate-200 placeholder-slate-500 focus:border-indigo-500 transition">
+                <button onclick="saveNote()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-lg font-medium transition">Guardar</button>
+            </div>
+            <div id="notesList" class="space-y-2 text-xs text-slate-300 pt-1"></div>
+        </section>
 
-    <!-- FIREBASE SDKs Y LOGICA -->
+    </main>
+
+    <!-- FIREBASE SDKs & LOGICA -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -104,60 +86,44 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
 
         let currentSeries = 0;
 
-        // Registrar usuario nuevo
-        window.registerUser = async () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passInput').value;
-            const errorElem = document.getElementById('authError');
-            
+        window.loginWithGoogle = async () => {
             try {
-                await createUserWithEmailAndPassword(auth, email, pass);
-                errorElem.textContent = "";
+                await signInWithRedirect(auth, provider);
             } catch (error) {
-                errorElem.textContent = "Error al registrar: " + error.message;
+                console.error("Error en login:", error);
+                alert("No se pudo iniciar sesión.");
             }
         };
 
-        // Iniciar sesión
-        window.loginUser = async () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passInput').value;
-            const errorElem = document.getElementById('authError');
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                errorElem.textContent = "";
-            } catch (error) {
-                errorElem.textContent = "Datos incorrectos o usuario no encontrado.";
-            }
-        };
-
-        // Cerrar sesión
-        window.logoutUser = async () => {
+        window.logout = async () => {
             await signOut(auth);
         };
 
-        // Escuchar estado de autenticación
+        getRedirectResult(auth).catch((error) => {
+            console.error("Error de redirección:", error);
+        });
+
         onAuthStateChanged(auth, (user) => {
-            const authScreen = document.getElementById('authScreen');
+            const authContainer = document.getElementById('authContainer');
             const mainApp = document.getElementById('mainApp');
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const userStatus = document.getElementById('userStatus');
 
             if (user) {
-                authScreen.classList.add('hidden');
+                userStatus.textContent = `Hola, ${user.displayName}`;
+                authContainer.innerHTML = `<button onclick="logout()" class="bg-red-950/60 hover:bg-red-900/60 border border-red-800/50 text-red-300 text-xs px-3 py-2 rounded-lg transition">Salir</button>`;
                 mainApp.classList.remove('hidden');
-                userEmailDisplay.textContent = user.email;
                 loadUserData(user.uid);
             } else {
-                authScreen.classList.remove('hidden');
+                userStatus.textContent = "Iniciá sesión con Google";
+                authContainer.innerHTML = `<button onclick="loginWithGoogle()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-lg shadow-indigo-600/30">Acceder con Google</button>`;
                 mainApp.classList.add('hidden');
             }
         });
 
-        // Guardar Notas en Firestore
         window.saveNote = async () => {
             const text = document.getElementById('noteInput').value;
             const user = auth.currentUser;
@@ -172,11 +138,10 @@
                 document.getElementById('noteInput').value = '';
                 loadUserData(user.uid);
             } catch (e) {
-                console.error("Error al guardar:", e);
+                console.error("Error al guardar nota:", e);
             }
         };
 
-        // Cargar Notas de Firestore
         async function loadUserData(uid) {
             const notesList = document.getElementById('notesList');
             notesList.innerHTML = '';
@@ -203,13 +168,12 @@
             }
         }
 
-        // Borrar Nota
         window.deleteNote = async (docId) => {
             try {
                 await deleteDoc(doc(db, "notes", docId));
                 loadUserData(auth.currentUser.uid);
             } catch (e) {
-                console.error("Error al borrar:", e);
+                console.error("Error al borrar nota:", e);
             }
         };
 
