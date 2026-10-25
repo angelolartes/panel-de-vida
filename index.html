@@ -637,39 +637,37 @@
             const players = room.players || {};
 
             if (players[currentUser.uid]) {
+                // Guardar las respuestas del usuario actual
                 players[currentUser.uid].answers = answers;
                 players[currentUser.uid].submitted = true;
 
-                // ÚNICAMENTE EL ANFITRIÓN HACE EL CÁLCULO GLOBAL DE LA RONDA PARA EVITAR CERO O DUPLICADOS
-                const isHost = room.hostUid === currentUser.uid;
+                const letter = room.activeLetter ? room.activeLetter.trim().toUpperCase() : '';
 
-                if (isHost) {
-                    const letter = room.activeLetter ? room.activeLetter.trim().toUpperCase() : '';
+                // CADA JUGADOR CALCULA SU PROPIO PUNTAJE DE ESTA RONDA DE FORMA LIMPIA
+                let roundTotalPoints = 0;
 
-                    CATEGORIES.forEach(cat => {
-                        const wordCount = {};
-                        // Contar cuántas veces se repite cada palabra válida en esta categoría
+                CATEGORIES.forEach(cat => {
+                    const myWord = answers[cat] || '';
+                    if (myWord && letter && myWord.startsWith(letter)) {
+                        // Ver cuántos jugadores más pusieron esta misma palabra
+                        let count = 0;
                         Object.values(players).forEach(p => {
-                            const word = p.answers && p.answers[cat] ? p.answers[cat].trim().toUpperCase() : '';
-                            // Validar que no esté vacía y empiece con la letra activa
-                            if (word && letter && word.startsWith(letter)) {
-                                wordCount[word] = (wordCount[word] || 0) + 1;
+                            const pWord = (p.answers && p.answers[cat]) ? p.answers[cat].trim().toUpperCase() : '';
+                            if (pWord === myWord) {
+                                count++;
                             }
                         });
 
-                        // Asignar puntos por categoría a cada jugador
-                        Object.values(players).forEach(p => {
-                            const word = p.answers && p.answers[cat] ? p.answers[cat].trim().toUpperCase() : '';
-                            if (word && letter && word.startsWith(letter)) {
-                                if (wordCount[word] > 1) {
-                                    p.score = (p.score || 0) + 5;  // Repetida = 5 pts
-                                } else {
-                                    p.score = (p.score || 0) + 10; // Única = 10 pts
-                                }
-                            }
-                        });
-                    });
-                }
+                        if (count > 1) {
+                            roundTotalPoints += 5;  // Repetida = 5 pts
+                        } else {
+                            roundTotalPoints += 10; // Única = 10 pts
+                        }
+                    }
+                });
+
+                // Sumar al puntaje total acumulado del usuario actual
+                players[currentUser.uid].score = (players[currentUser.uid].score || 0) + roundTotalPoints;
 
                 await updateDoc(roomRef, {
                     players: players,
