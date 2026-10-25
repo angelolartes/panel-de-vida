@@ -98,6 +98,11 @@
             </div>
 
             <div class="flex items-center gap-1.5">
+                <!-- Daily Streak Pill -->
+                <div class="flex items-center gap-1 px-2 py-1.5 rounded-xl bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-bold" title="Racha de días activos">
+                    <span>🔥</span>
+                    <span id="streakCountLabel">5d</span>
+                </div>
                 <!-- Focus Timer Pill -->
                 <button onclick="togglePomodoroModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-violet-500/10 text-xs font-medium text-slate-700 dark:text-slate-300 transition">
                     <i data-lucide="timer" class="w-3.5 h-3.5 text-violet-500"></i>
@@ -391,6 +396,29 @@
                     </div>
                 </div>
 
+                <!-- Nutrition & Post-Workout Meal AI Helper -->
+                <div class="p-3.5 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-teal-500/25 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-teal-700 dark:text-teal-300 flex items-center gap-1">
+                                🍳 Nutrición & Proteína Hoy
+                            </span>
+                            <span id="proteinMealsBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-600 dark:text-teal-300">2/4 comidas</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="changeProteinMeals(-1)" class="w-6 h-6 rounded-lg bg-white dark:bg-slate-800 text-xs font-bold border border-slate-200 dark:border-slate-700">-</button>
+                            <button onclick="changeProteinMeals(1)" class="px-2 h-6 rounded-lg bg-teal-600 text-white text-[10px] font-semibold">+ Comida</button>
+                            <button onclick="openMealGeneratorModal()" class="px-2.5 h-6 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold flex items-center gap-1">
+                                <i data-lucide="sparkles" class="w-3 h-3"></i>
+                                ¿Qué cocino?
+                            </button>
+                        </div>
+                    </div>
+                    <p id="mealAiSuggestionText" class="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                        💡 Tocá <strong>"¿Qué cocino?"</strong>, decime qué ingredientes tenés en casa y te armo una comida post-entreno en 5 segundos.
+                    </p>
+                </div>
+
                 <!-- Add New Exercise Form -->
                 <div class="p-3.5 rounded-3xl bg-slate-100/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2.5">
                     <div class="flex items-center justify-between">
@@ -600,7 +628,9 @@
 
         let state = {
             mood: { label: 'Enfocado', energy: 85, emoji: '🚀' },
+            streakDays: 5,
             waterGlasses: 5,
+            proteinMeals: 2,
             creatineDone: true,
             budgetLimit: 450000,
             activeFilter: 'todas',
@@ -633,27 +663,27 @@
             ],
             gymExercises: [
                 // Empuje (En casa, sin máquinas ni barra)
-                { id: 'g1', split: 'Empuje', title: 'Flexiones de Brazos Clásicas', sets: '4 series', weight: 15, doneToday: true, note: 'Pecho casi al piso' },
-                { id: 'g2', split: 'Empuje', title: 'Flexiones Pica (Pike Push-ups Hombros)', sets: '4 series', weight: 10, doneToday: true, note: 'Cadera bien arriba' },
-                { id: 'g3', split: 'Empuje', title: 'Flexiones Declinadas (Pies en silla)', sets: '3 series', weight: 12, doneToday: false, note: 'Pecho superior' },
-                { id: 'g4', split: 'Empuje', title: 'Fondos de Tríceps en Silla o Cama', sets: '4 series', weight: 15, doneToday: false, note: 'Codos hacia atrás' },
-                { id: 'g5', split: 'Empuje', title: 'Flexiones Diamante (Cerradas)', sets: '3 series', weight: 10, doneToday: false, note: 'Foco en tríceps' },
+                { id: 'g1', split: 'Empuje', title: 'Flexiones de Brazos Clásicas', sets: '4 series', completedSets: 4, weight: 15, doneToday: true, note: 'Pecho casi al piso' },
+                { id: 'g2', split: 'Empuje', title: 'Flexiones Pica (Pike Push-ups Hombros)', sets: '4 series', completedSets: 4, weight: 10, doneToday: true, note: 'Cadera bien arriba' },
+                { id: 'g3', split: 'Empuje', title: 'Flexiones Declinadas (Pies en silla)', sets: '3 series', completedSets: 1, weight: 12, doneToday: false, note: 'Pecho superior' },
+                { id: 'g4', split: 'Empuje', title: 'Fondos de Tríceps en Silla o Cama', sets: '4 series', completedSets: 0, weight: 15, doneToday: false, note: 'Codos hacia atrás' },
+                { id: 'g5', split: 'Empuje', title: 'Flexiones Diamante (Cerradas)', sets: '3 series', completedSets: 0, weight: 10, doneToday: false, note: 'Foco en tríceps' },
                 // Tirón / Espalda y Postura en suelo (100% SIN barra para colgarse)
-                { id: 'g6', split: 'Tirón', title: 'Empuje de Codos contra el Piso (Back Widows)', sets: '4 series', weight: 15, doneToday: false, note: 'Apretar espalda alta' },
-                { id: 'g7', split: 'Tirón', title: 'Remo Deslizante en el Piso o con Toalla', sets: '4 series', weight: 12, doneToday: false, note: 'Tracción sin barra' },
-                { id: 'g8', split: 'Tirón', title: 'Ángeles de Nieve Invertidos (Boca abajo)', sets: '4 series', weight: 15, doneToday: false, note: 'Juntar escápulas' },
-                { id: 'g9', split: 'Tirón', title: 'Superman Isométrico + Tracción en W', sets: '4 series', weight: 15, doneToday: false, note: 'Pausa 2 seg arriba' },
+                { id: 'g6', split: 'Tirón', title: 'Empuje de Codos contra el Piso (Back Widows)', sets: '4 series', completedSets: 0, weight: 15, doneToday: false, note: 'Apretar espalda alta' },
+                { id: 'g7', split: 'Tirón', title: 'Remo Deslizante en el Piso o con Toalla', sets: '4 series', completedSets: 0, weight: 12, doneToday: false, note: 'Tracción sin barra' },
+                { id: 'g8', split: 'Tirón', title: 'Ángeles de Nieve Invertidos (Boca abajo)', sets: '4 series', completedSets: 0, weight: 15, doneToday: false, note: 'Juntar escápulas' },
+                { id: 'g9', split: 'Tirón', title: 'Superman Isométrico + Tracción en W', sets: '4 series', completedSets: 0, weight: 15, doneToday: false, note: 'Pausa 2 seg arriba' },
                 // Piernas (Peso corporal en casa)
-                { id: 'g10', split: 'Piernas', title: 'Sentadillas Búlgaras (Pie en silla)', sets: '4 series', weight: 12, doneToday: false, note: 'Reps por cada pierna' },
-                { id: 'g11', split: 'Piernas', title: 'Puente de Glúteos a Una Pierna', sets: '4 series', weight: 15, doneToday: false, note: 'Pausa 2 seg arriba' },
-                { id: 'g12', split: 'Piernas', title: 'Sentadillas con Pausa Isométrica Abajo', sets: '4 series', weight: 20, doneToday: false, note: 'Bajada controlada' },
-                { id: 'g13', split: 'Piernas', title: 'Zancadas / Estocadas Alternadas', sets: '3 series', weight: 16, doneToday: false, note: 'Paso largo' },
-                { id: 'g14', split: 'Piernas', title: 'Elevación de Gemelos a 1 Pierna', sets: '4 series', weight: 20, doneToday: false, note: 'Rango completo' },
+                { id: 'g10', split: 'Piernas', title: 'Sentadillas Búlgaras (Pie en silla)', sets: '4 series', completedSets: 0, weight: 12, doneToday: false, note: 'Reps por cada pierna' },
+                { id: 'g11', split: 'Piernas', title: 'Puente de Glúteos a Una Pierna', sets: '4 series', completedSets: 0, weight: 15, doneToday: false, note: 'Pausa 2 seg arriba' },
+                { id: 'g12', split: 'Piernas', title: 'Sentadillas con Pausa Isométrica Abajo', sets: '4 series', completedSets: 0, weight: 20, doneToday: false, note: 'Bajada controlada' },
+                { id: 'g13', split: 'Piernas', title: 'Zancadas / Estocadas Alternadas', sets: '3 series', completedSets: 0, weight: 16, doneToday: false, note: 'Paso largo' },
+                { id: 'g14', split: 'Piernas', title: 'Elevación de Gemelos a 1 Pierna', sets: '4 series', completedSets: 0, weight: 20, doneToday: false, note: 'Rango completo' },
                 // FullBody & Core en casa
-                { id: 'g15', split: 'FullBody', title: 'Burpees o Medio Burpee Dinámico', sets: '4 series', weight: 12, doneToday: false, note: 'Ritmo continuo' },
-                { id: 'g16', split: 'FullBody', title: 'Plancha Abdominal Activa (Segundos)', sets: '4 series', weight: 45, doneToday: false, note: 'Glúteos y abdomen firmes' },
-                { id: 'g17', split: 'FullBody', title: 'Escaladores (Mountain Climbers)', sets: '4 series', weight: 30, doneToday: false, note: 'Core estable' },
-                { id: 'g18', split: 'FullBody', title: 'Abdominales Bisagra / Hollow Body', sets: '3 series', weight: 20, doneToday: false, note: 'Zona lumbar apoyada' }
+                { id: 'g15', split: 'FullBody', title: 'Burpees o Medio Burpee Dinámico', sets: '4 series', completedSets: 0, weight: 12, doneToday: false, note: 'Ritmo continuo' },
+                { id: 'g16', split: 'FullBody', title: 'Plancha Abdominal Activa (Segundos)', sets: '4 series', completedSets: 0, weight: 45, doneToday: false, note: 'Glúteos y abdomen firmes' },
+                { id: 'g17', split: 'FullBody', title: 'Escaladores (Mountain Climbers)', sets: '4 series', completedSets: 0, weight: 30, doneToday: false, note: 'Core estable' },
+                { id: 'g18', split: 'FullBody', title: 'Abdominales Bisagra / Hollow Body', sets: '3 series', completedSets: 0, weight: 20, doneToday: false, note: 'Zona lumbar apoyada' }
             ],
             expenses: [
                 { id: 'e1', title: 'Compra semanal carnicería, huevos y avena', amount: 34500, category: 'Comida', date: 'Hoy' },
@@ -1259,12 +1289,135 @@ Usá el CONTEXTO ACTUAL DEL USUARIO (recordando siempre que entrena en casa solo
         function toggleExercise(id) {
             const ex = state.gymExercises.find(g => g.id === id);
             if (ex) {
+                const totalSets = parseInt(ex.sets, 10) || 4;
                 ex.doneToday = !ex.doneToday;
+                ex.completedSets = ex.doneToday ? totalSets : 0;
                 renderAll();
                 if (ex.doneToday) {
+                    playTimerSound();
                     showToast(`💪 ¡${ex.title} (${ex.sets} x ${ex.weight} reps) completado!`);
                 }
             }
+        }
+
+        function advanceExerciseSet(id) {
+            const ex = state.gymExercises.find(g => g.id === id);
+            if (!ex) return;
+            const totalSets = parseInt(ex.sets, 10) || 4;
+            const current = ex.completedSets || 0;
+
+            if (current + 1 < totalSets) {
+                ex.completedSets = current + 1;
+                ex.doneToday = false;
+                renderAll();
+                startRestTimer(60);
+                showToast(`✅ Serie ${ex.completedSets}/${totalSets} lista • Descanso 60s automático`);
+            } else if (current + 1 === totalSets) {
+                ex.completedSets = totalSets;
+                ex.doneToday = true;
+                renderAll();
+                playTimerSound();
+                showToast(`🏆 ¡4/4 Series de ${ex.title} completadas!`);
+            } else {
+                ex.completedSets = 0;
+                ex.doneToday = false;
+                renderAll();
+            }
+        }
+
+        async function evolveExerciseWithAI(id) {
+            const ex = state.gymExercises.find(g => g.id === id);
+            if (!ex) return;
+            showToast(`✨ Buscando progresión en casa para "${ex.title}"...`);
+
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [{ text: `El usuario hace en su casa "${ex.title}" (${ex.sets} de ${ex.weight} reps). Entrena SOLO con peso corporal y NO tiene barra para colgarse ni pesas. Dame una variante un poco más desafiante biomecánicamente (o con tempo/unilateral) para progresar en casa. Respondé en JSON con "newTitle", "newReps" (número) y "tip" (máximo 5 palabras).` }]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            newTitle: { type: "STRING" },
+                            newReps: { type: "NUMBER" },
+                            tip: { type: "STRING" }
+                        },
+                        required: ["newTitle", "newReps", "tip"]
+                    }
+                }
+            };
+
+            try {
+                const res = await callGeminiAPI(payload);
+                const data = JSON.parse(res);
+                if (data.newTitle) {
+                    ex.title = data.newTitle;
+                    ex.weight = Number(data.newReps) || ex.weight;
+                    ex.note = data.tip || 'Variante avanzada';
+                    renderAll();
+                    showToast(`🔥 Evolucionado a: ${ex.title}`);
+                }
+            } catch (e) {
+                ex.note = 'Tempo lento: 3 seg bajando';
+                renderAll();
+                showToast('🔥 Progresión aplicada: Tempo 3 seg bajando');
+            }
+        }
+
+        function changeProteinMeals(delta) {
+            state.proteinMeals = Math.max(0, Math.min(6, (state.proteinMeals || 0) + delta));
+            renderAll();
+            if (delta > 0) showToast(`🥩 ${state.proteinMeals}/4 comidas proteicas registradas`);
+        }
+
+        function openMealGeneratorModal() {
+            document.getElementById('customModalTitle').innerText = '🍳 ¿Qué ingredientes tenés a mano?';
+            const inp = document.getElementById('customModalInput');
+            inp.value = '';
+            inp.placeholder = 'Ej: huevos, arroz, pollo, atún, avena, queso...';
+            document.getElementById('customModal').classList.remove('hidden');
+            document.getElementById('customModal').classList.add('flex');
+            inp.focus();
+
+            modalCallback = async (val) => {
+                if (!val.trim()) return;
+                const suggestionEl = document.getElementById('mealAiSuggestionText');
+                suggestionEl.innerHTML = '<span class="animate-pulse">🍳 Pensando receta rápida alta en proteína...</span>';
+                try {
+                    const text = await callGeminiAPI({
+                        contents: [{
+                            role: "user",
+                            parts: [{ text: `Acabo de entrenar calistenia en casa y tengo estos ingredientes: "${val}". Dame 1 idea de comida rápida y rica en proteína en máximo 25 palabras.` }]
+                        }]
+                    });
+                    suggestionEl.innerText = '🍽️ ' + text.trim();
+                } catch (e) {
+                    suggestionEl.innerText = `🍽️ Preparate un revuelto o bowl proteico combinando ${val} con buena hidratación post-entreno.`;
+                }
+            };
+        }
+
+        function playTimerSound() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const notes = [523.25, 659.25, 783.99]; // C5, E5, G5 chord chime
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.12 + 0.45);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + idx * 0.12);
+                    osc.stop(ctx.currentTime + idx * 0.12 + 0.45);
+                });
+            } catch (e) {}
         }
 
         function adjustExerciseWeight(id, delta) {
@@ -1301,6 +1454,7 @@ Usá el CONTEXTO ACTUAL DEL USUARIO (recordando siempre que entrena en casa solo
                 split: state.activeGymSplit,
                 title,
                 sets,
+                completedSets: 0,
                 weight,
                 doneToday: false,
                 note: 'Peso corporal en casa'
@@ -1326,6 +1480,7 @@ Usá el CONTEXTO ACTUAL DEL USUARIO (recordando siempre que entrena en casa solo
                     clearInterval(restInterval);
                     restRemaining = 0;
                     updateRestDisplay();
+                    playTimerSound();
                     showToast('🔥 ¡Descanso terminado! A darle a la siguiente serie.');
                 } else {
                     updateRestDisplay();
@@ -1482,6 +1637,7 @@ Usá el CONTEXTO ACTUAL DEL USUARIO (recordando siempre que entrena en casa solo
                     } else {
                         clearInterval(pomoInterval);
                         pomoInterval = null;
+                        playTimerSound();
                         showToast('⏰ ¡Tiempo de enfoque cumplido! Tomate un respiro.');
                     }
                 }, 1000);
@@ -1572,39 +1728,61 @@ Usá el CONTEXTO ACTUAL DEL USUARIO (recordando siempre que entrena en casa solo
             if (currentSplitExercises.length === 0) {
                 fullHabitsEl.innerHTML = `<div class="p-5 rounded-2xl bg-slate-100 dark:bg-slate-800/50 text-center text-xs text-slate-500">No hay ejercicios en este día. Tocá "Armar Rutina IA" o agregá uno arriba.</div>`;
             } else {
-                fullHabitsEl.innerHTML = currentSplitExercises.map(g => `
-                    <div class="p-3.5 rounded-2xl border flex items-center justify-between gap-2 transition ${g.doneToday ? 'bg-teal-500/10 border-teal-500/40' : 'bg-slate-100/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-800'}">
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <button onclick="toggleExercise('${g.id}')" class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition ${g.doneToday ? 'bg-teal-500 text-white shadow-md shadow-teal-500/30' : 'bg-white dark:bg-slate-700 text-slate-400 border border-slate-200 dark:border-slate-600'}">
-                                <i data-lucide="check" class="w-4 h-4"></i>
-                            </button>
-                            <div class="min-w-0 flex-1">
-                                <p class="text-xs sm:text-sm font-semibold truncate ${g.doneToday ? 'line-through opacity-70' : ''}">${g.title}</p>
-                                <div class="flex items-center gap-2 mt-0.5">
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-500/15 text-teal-600 dark:text-teal-300">${g.sets}</span>
-                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${g.note || ''}</span>
+                fullHabitsEl.innerHTML = currentSplitExercises.map(g => {
+                    const totalSets = parseInt(g.sets, 10) || 4;
+                    const doneSets = g.doneToday ? totalSets : (g.completedSets || 0);
+                    return `
+                    <div class="p-3.5 rounded-2xl border flex flex-col gap-2.5 transition ${g.doneToday ? 'bg-teal-500/10 border-teal-500/40' : 'bg-slate-100/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-800'}">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-3 flex-1 min-w-0">
+                                <button onclick="toggleExercise('${g.id}')" class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition ${g.doneToday ? 'bg-teal-500 text-white shadow-md shadow-teal-500/30' : 'bg-white dark:bg-slate-700 text-slate-400 border border-slate-200 dark:border-slate-600'}">
+                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                </button>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs sm:text-sm font-semibold truncate ${g.doneToday ? 'line-through opacity-70' : ''}">${g.title}</p>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-500/15 text-teal-600 dark:text-teal-300">${g.sets}</span>
+                                        <span class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${g.note || ''}</span>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <!-- Repetitions Progress & Controls -->
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button onclick="adjustExerciseWeight('${g.id}', -1)" class="w-6 h-7 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:border-teal-500" title="Restar 1 repetición">-</button>
+                                <div class="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-center min-w-[54px]">
+                                    <span class="font-display font-bold text-xs">${g.weight}</span>
+                                    <span class="text-[9px] text-slate-400">reps</span>
+                                </div>
+                                <button onclick="adjustExerciseWeight('${g.id}', 1)" class="w-6 h-7 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:border-teal-500" title="Sumar 1 repetición">+</button>
+                                <button onclick="deleteExercise('${g.id}')" class="p-1 text-slate-400 hover:text-rose-500">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Repetitions Progress & Controls -->
-                        <div class="flex items-center gap-1 shrink-0">
-                            <button onclick="adjustExerciseWeight('${g.id}', -1)" class="w-6 h-7 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:border-teal-500" title="Restar 1 repetición">-</button>
-                            <div class="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-center min-w-[56px]">
-                                <span class="font-display font-bold text-xs">${g.weight}</span>
-                                <span class="text-[9px] text-slate-400">reps</span>
-                            </div>
-                            <button onclick="adjustExerciseWeight('${g.id}', 1)" class="w-6 h-7 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:border-teal-500" title="Sumar 1 repetición">+</button>
-                            <button onclick="deleteExercise('${g.id}')" class="p-1 text-slate-400 hover:text-rose-500">
-                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <!-- Interactive Step-by-Step Sets Bar & AI Calisthenics Evolution -->
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                            <button onclick="advanceExerciseSet('${g.id}')" class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold transition ${doneSets === totalSets ? 'bg-teal-500/20 text-teal-600 dark:text-teal-300' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-teal-500'}">
+                                <i data-lucide="flame" class="w-3.5 h-3.5 text-teal-500"></i>
+                                <span>Series: ${doneSets}/${totalSets}</span>
+                                <span class="text-[10px] text-teal-500 font-bold ml-0.5">${doneSets < totalSets ? '(+1 y descansar)' : '✓'}</span>
+                            </button>
+                            <button onclick="evolveExerciseWithAI('${g.id}')" class="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-300 hover:bg-violet-500 hover:text-white text-[10px] font-semibold transition" title="Subir la dificultad biomecánica con IA (sin barra)">
+                                <i data-lucide="sparkles" class="w-3 h-3"></i>
+                                <span>Subir Nivel IA</span>
                             </button>
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
             }
 
-            // Water & Supplement labels
+            // Water, Protein & Supplement labels
             document.getElementById('waterLabel').innerText = `${state.waterGlasses}/8 vasos`;
+            const protBadge = document.getElementById('proteinMealsBadge');
+            if (protBadge) protBadge.innerText = `${state.proteinMeals || 0}/4 comidas`;
+            const streakEl = document.getElementById('streakCountLabel');
+            if (streakEl) streakEl.innerText = `${state.streakDays || 5}d`;
             const suppBtn = document.getElementById('suppCreatineBtn');
             if (suppBtn) {
                 suppBtn.className = state.creatineDone
