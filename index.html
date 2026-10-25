@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura Life OS</title>
+    <title>Aura Life OS - Sincronizado</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,19 +13,21 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
 
-    <!-- HEADER -->
-    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+    <!-- HEADER / LOGIN DE GOOGLE -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center sticky top-0 z-50">
         <div>
             <h1 class="font-bold text-base text-indigo-400">⚡ Aura Life OS</h1>
-            <p class="text-xs text-slate-400">Panel personal en línea</p>
+            <p class="text-xs text-slate-400 truncate max-w-[200px]" id="userStatus">Iniciá sesión con Google</p>
         </div>
-        <div class="bg-indigo-950 text-indigo-300 text-xs px-3 py-1.5 rounded-lg border border-indigo-800/50 font-medium">
-            Modo Local Activo
+        <div id="authContainer">
+            <button onclick="loginWithGoogle()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-lg shadow-indigo-600/30">
+                Acceder con Google
+            </button>
         </div>
     </header>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="flex-1 p-4 max-w-md mx-auto w-full space-y-6 pb-24">
+    <!-- CONTENIDO PRINCIPAL (Se muestra solo al loguearse) -->
+    <main id="mainApp" class="flex-1 p-4 max-w-md mx-auto w-full space-y-6 pb-24 hidden">
         
         <!-- Barra de Captura Mágica -->
         <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex gap-2 shadow-lg">
@@ -40,7 +42,7 @@
                 <span class="text-xs bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-800/50">Sin barra / Sin peso</span>
             </div>
             
-            <div class="space-y-3">
+            <div id="workoutContainer" class="space-y-3">
                 <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/60 space-y-2">
                     <div class="flex justify-between items-center">
                         <span class="text-sm font-medium text-slate-200">Flexiones Clásicas</span>
@@ -66,69 +68,129 @@
 
     </main>
 
-    <!-- LOGICA LOCAL -->
-    <script>
-        let currentSeries = 0;
+    <!-- FIREBASE SDKs & LOGICA -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Cargar notas al iniciar
-        window.onload = () => {
-            loadNotes();
+        const firebaseConfig = {
+            apiKey: "AIzaSyC9C5o1cY9D8wRTn8F--XTgGGztuu9cyYQ",
+            authDomain: "auralifeos-2d99e.firebaseapp.com",
+            projectId: "auralifeos-2d99e",
+            storageBucket: "auralifeos-2d99e.firebasestorage.app",
+            messagingSenderId: "149152660489",
+            appId: "1:149152660489:web:a093b7140e1921eb73ccd8"
         };
 
-        function saveNote() {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentSeries = 0;
+
+        window.loginWithGoogle = async () => {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Error en login:", error);
+                alert("No se pudo iniciar sesión. Verificá tu conexión.");
+            }
+        };
+
+        window.logout = async () => {
+            await signOut(auth);
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            const authContainer = document.getElementById('authContainer');
+            const mainApp = document.getElementById('mainApp');
+            const userStatus = document.getElementById('userStatus');
+
+            if (user) {
+                userStatus.textContent = `Hola, ${user.displayName}`;
+                authContainer.innerHTML = `<button onclick="logout()" class="bg-red-950/60 hover:bg-red-900/60 border border-red-800/50 text-red-300 text-xs px-3 py-2 rounded-lg transition">Salir</button>`;
+                mainApp.classList.remove('hidden');
+                loadUserData(user.uid);
+            } else {
+                userStatus.textContent = "Iniciá sesión con Google";
+                authContainer.innerHTML = `<button onclick="loginWithGoogle()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow-lg shadow-indigo-600/30">Acceder con Google</button>`;
+                mainApp.classList.add('hidden');
+            }
+        });
+
+        // Funciones de Notas en la Nube
+        window.saveNote = async () => {
             const text = document.getElementById('noteInput').value;
-            if (!text.trim()) return;
+            const user = auth.currentUser;
+            if (!text.trim() || !user) return;
 
-            let notes = JSON.parse(localStorage.getItem('aura_notes') || '[]');
-            notes.push({ id: Date.now(), text: text });
-            localStorage.setItem('aura_notes', JSON.stringify(notes));
+            try {
+                await addDoc(collection(db, "notes"), {
+                    uid: user.uid,
+                    text: text,
+                    createdAt: new Date()
+                });
+                document.getElementById('noteInput').value = '';
+                loadUserData(user.uid);
+            } catch (e) {
+                console.error("Error al guardar nota:", e);
+            }
+        };
 
-            document.getElementById('noteInput').value = '';
-            loadNotes();
-        }
-
-        function loadNotes() {
+        async function loadUserData(uid) {
             const notesList = document.getElementById('notesList');
             notesList.innerHTML = '';
-            let notes = JSON.parse(localStorage.getItem('aura_notes') || '[]');
+            
+            try {
+                const q = query(collection(db, "notes"), where("uid", "==", uid));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    notesList.innerHTML = `<p class="text-slate-500 italic">No hay notas guardadas todavía.</p>`;
+                    return;
+                }
 
-            if (notes.length === 0) {
-                notesList.innerHTML = `<p class="text-slate-500 italic">No hay notas guardadas todavía.</p>`;
-                return;
+                querySnapshot.forEach((documentSnap) => {
+                    const data = documentSnap.data();
+                    notesList.innerHTML += `
+                        <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800/60 flex justify-between items-center">
+                            <span class="text-slate-200">${data.text}</span>
+                            <button onclick="deleteNote('${documentSnap.id}')" class="text-slate-500 hover:text-red-400 px-1 text-xs">✕</button>
+                        </div>`;
+                });
+            } catch (e) {
+                console.error("Error al cargar notas:", e);
             }
-
-            notes.forEach(note => {
-                notesList.innerHTML += `
-                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800/60 flex justify-between items-center">
-                        <span class="text-slate-200">${note.text}</span>
-                        <button onclick="deleteNote(${note.id})" class="text-slate-500 hover:text-red-400 px-1 text-xs">✕</button>
-                    </div>`;
-            });
         }
 
-        function deleteNote(id) {
-            let notes = JSON.parse(localStorage.getItem('aura_notes') || '[]');
-            notes = notes.filter(note => note.id !== id);
-            localStorage.setItem('aura_notes', JSON.stringify(notes));
-            loadNotes();
-        }
+        window.deleteNote = async (docId) => {
+            try {
+                await deleteDoc(doc(db, "notes", docId));
+                loadUserData(auth.currentUser.uid);
+            } catch (e) {
+                console.error("Error al borrar nota:", e);
+            }
+        };
 
-        function logSeries(exercise) {
+        // Simulación de entrenamiento interactivo
+        window.logSeries = (exercise) => {
             if (currentSeries < 4) currentSeries++;
             document.getElementById(`counter-${exercise.toLowerCase()}`).textContent = `Series: ${currentSeries}/4`;
-        }
+        };
 
-        function resetSeries(exercise) {
+        window.resetSeries = (exercise) => {
             currentSeries = 0;
             document.getElementById(`counter-${exercise.toLowerCase()}`).textContent = `Series: 0/4`;
-        }
+        };
 
-        function processOmni() {
+        window.processOmni = () => {
             const val = document.getElementById('omniInput').value;
             if(!val) return;
             alert("Captura mágica procesada: " + val);
             document.getElementById('omniInput').value = '';
-        }
+        };
     </script>
 </body>
 </html>
