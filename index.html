@@ -1,722 +1,656 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aura OS — Panel de Vida con IA</title>
-    <!-- Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutti Frutti - Multijugador Online</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Plus Jakarta Sans', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        h1, h2, h3, .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .glass-card { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
     </style>
 </head>
-<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col items-center justify-start">
+<body class="bg-gradient-to-br from-indigo-950 via-purple-950 to-pink-950 min-h-screen text-white flex flex-col justify-between">
 
-    <!-- ==================== PANTALLA DE LOGIN / REGISTRO ==================== -->
-    <div id="authScreen" class="fixed inset-0 z-50 bg-slate-950 flex flex-col justify-center items-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-sm w-full space-y-5 shadow-2xl">
-            <div class="text-center space-y-1.5">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-500 to-teal-400 flex items-center justify-center text-white mx-auto shadow-lg shadow-violet-500/30 mb-2">
-                    <i data-lucide="sparkles" class="w-6 h-6"></i>
-                </div>
-                <h1 class="font-display font-bold text-xl text-indigo-400">⚡ Aura Life OS</h1>
-                <p class="text-xs text-slate-400">Iniciá sesión o creá tu cuenta sincronizada</p>
+    <!-- Header -->
+    <header class="w-full py-5 px-6 sm:px-8 bg-black/40 backdrop-blur-md border-b border-white/10 flex justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-yellow-400 to-pink-500 p-2.5 rounded-2xl shadow-lg">
+                <i class="fa-solid fa-gamepad text-xl text-white"></i>
             </div>
-
-            <div class="space-y-3">
-                <input type="email" id="emailInput" placeholder="Correo electrónico" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 text-sm outline-none text-slate-200 focus:border-violet-500 transition">
-                <input type="password" id="passInput" placeholder="Contraseña" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 text-sm outline-none text-slate-200 focus:border-violet-500 transition">
-                
-                <div class="flex gap-2 pt-2">
-                    <button onclick="loginUser()" class="flex-1 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold py-3 rounded-2xl transition shadow-lg shadow-violet-600/30">Entrar</button>
-                    <button onclick="registerUser()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold py-3 rounded-2xl transition">Registrarse</button>
-                </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-extrabold tracking-wide bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-300 bg-clip-text text-transparent">TUTTI FRUTTI ONLINE</h1>
+                <p class="text-xs text-purple-300" id="headerUserInfo">Conectando...</p>
             </div>
-            <p id="authError" class="text-xs text-rose-400 text-center h-4"></p>
         </div>
-    </div>
+        <div id="roomBadge" class="hidden flex items-center space-x-3 text-sm">
+            <div class="bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10 flex items-center space-x-2">
+                <span class="text-purple-300">Sala:</span>
+                <span id="displayRoomCode" class="font-bold text-yellow-300 tracking-wider">----</span>
+                <button onclick="copyRoomCode()" class="text-xs text-pink-400 hover:text-pink-300 ml-1"><i class="fa-regular fa-copy"></i></button>
+            </div>
+        </div>
+    </header>
 
-    <!-- Background Ambient Gradients -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div class="absolute -top-24 -left-24 w-80 h-80 bg-violet-600/20 dark:bg-violet-600/15 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/3 -right-24 w-72 h-72 bg-teal-500/20 dark:bg-teal-500/10 rounded-full blur-3xl"></div>
-    </div>
-
-    <!-- Mobile App Shell Container -->
-    <div id="mainApp" class="relative z-10 w-full max-w-md min-h-screen bg-white/80 dark:bg-slate-900/85 glass-card sm:shadow-2xl sm:border-x border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between pb-24 hidden">
-
-        <!-- TOP HEADER -->
-        <header class="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 glass-card border-b border-slate-200/60 dark:border-slate-800/80 px-4 py-3.5 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="relative">
-                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-500 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-violet-500/25">
-                        <i data-lucide="sparkles" class="w-5 h-5"></i>
-                    </div>
-                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-white dark:border-slate-900 rounded-full"></span>
-                </div>
+    <!-- Main Container -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
+        
+        <!-- Vista 0: Ingreso / Nombre de Usuario -->
+        <div id="loginView" class="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl text-center">
+            <div class="inline-block p-4 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 mb-6 shadow-xl animate-bounce">
+                <i class="fa-solid fa-user-astronaut text-4xl text-white"></i>
+            </div>
+            <h2 class="text-3xl font-extrabold mb-3">¡Bienvenido!</h2>
+            <p class="text-purple-200 mb-6 text-sm">Ingresa tu apodo o nombre para unirte a las partidas online.</p>
+            
+            <div class="space-y-4 text-left mb-6">
                 <div>
-                    <div class="flex items-center gap-1.5">
-                        <h1 class="font-display font-bold text-base tracking-tight">Aura Life OS</h1>
-                        <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/20">Nube</span>
-                    </div>
-                    <p id="currentDateLabel" class="text-xs text-slate-500 dark:text-slate-400">Cargando fecha...</p>
+                    <label class="block text-sm font-medium text-purple-200 mb-2">Tu Apodo</label>
+                    <input type="text" id="nicknameInput" maxlength="15" placeholder="Ej. Alex" 
+                        class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-pink-500 font-bold">
                 </div>
             </div>
 
-            <div class="flex items-center gap-1.5">
-                <button onclick="completeDayAndStreak()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-bold transition">
-                    <span>🔥</span>
-                    <span id="streakCountLabel">5d</span>
-                </button>
-                <button onclick="togglePomodoroModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 transition">
-                    <i data-lucide="timer" class="w-3.5 h-3.5 text-violet-500"></i>
-                    <span id="headerTimerText">25:00</span>
-                </button>
-                <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
-                    <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
-                    <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-700"></i>
-                </button>
-                <button onclick="logoutUser()" class="p-2 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 text-xs font-semibold transition" title="Cerrar sesión">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
-                </button>
+            <button onclick="saveNickname()" class="w-full py-4 bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 font-bold text-lg rounded-xl shadow-lg transition transform hover:-translate-y-0.5">
+                Continuar <i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+
+        <!-- Vista 1: Menú Principal (Crear / Unirse) -->
+        <div id="menuView" class="hidden w-full max-w-xl bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl text-center">
+            <div class="inline-block p-4 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-400 mb-6 shadow-xl">
+                <i class="fa-solid fa-globe text-4xl text-white"></i>
             </div>
-        </header>
-
-        <!-- MAIN CONTENT AREA -->
-        <main class="flex-1 px-4 pt-4 space-y-5 overflow-y-auto no-scrollbar">
-
-            <!-- OMNI-CAPTURE BAR -->
-            <section id="omniCaptureSection" class="relative">
-                <div class="p-3.5 rounded-3xl bg-gradient-to-br from-violet-600/10 via-indigo-500/10 to-teal-500/10 dark:from-violet-600/20 dark:via-indigo-900/25 dark:to-teal-900/20 border border-violet-500/30 shadow-sm">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-semibold text-violet-700 dark:text-violet-300 flex items-center gap-1.5">
-                            <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
-                            Captura Mágica con IA (Todo en uno)
-                        </span>
-                        <button onclick="fillSampleOmni()" class="text-[11px] text-slate-500 dark:text-slate-400 underline hover:text-violet-500">Probar ejemplo</button>
-                    </div>
-                    <div class="relative flex items-center">
-                        <textarea id="omniInput" rows="2" placeholder="Contame qué tenés que hacer, entrenar o gastar..." class="w-full bg-white/90 dark:bg-slate-900/90 text-sm rounded-2xl pl-3.5 pr-20 py-2.5 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-violet-500 resize-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"></textarea>
-                        <div class="absolute right-2 bottom-2 flex items-center gap-1">
-                            <button id="voiceBtn" onclick="startVoiceCapture()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-violet-500 transition"><i data-lucide="mic" class="w-4 h-4"></i></button>
-                            <button id="omniSubmitBtn" onclick="processOmniInput()" class="p-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-600/30 hover:opacity-95 transition"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                    <p id="omniStatus" class="text-[11px] text-slate-500 mt-1.5 hidden flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-violet-500 animate-ping"></span>
-                        <span>La IA está organizando tu información...</span>
-                    </p>
-                </div>
-            </section>
-
-            <!-- ==================== TAB 1: INICIO ==================== -->
-            <div id="tab-home" class="space-y-5">
-                <div class="p-4 rounded-3xl bg-slate-900 dark:bg-slate-800/90 text-white relative overflow-hidden shadow-lg">
-                    <div class="relative z-10">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-violet-500/30 text-violet-200 border border-violet-400/30">Copiloto del Día</span>
-                            <button onclick="generateDailyBriefing()" class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-xl transition"><i data-lucide="refresh-cw" class="w-3 h-3"></i><span>Actualizar</span></button>
-                        </div>
-                        <p id="aiDailyBriefing" class="text-sm text-slate-200 leading-relaxed">¡Hola! Tu panel está conectado a la nube de Google. Tenés tus prioridades y tu calistenia en casa listas.</p>
-                    </div>
-                </div>
-
-                <!-- Quick Stats Bento Grid -->
-                <div class="grid grid-cols-3 gap-2.5">
-                    <button onclick="switchTab('tasks')" class="p-3 rounded-2xl bg-slate-100/90 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 text-left">
-                        <div class="flex items-center justify-between mb-1">
-                            <div class="w-7 h-7 rounded-xl bg-violet-500/15 text-violet-600 flex items-center justify-center"><i data-lucide="check-square" class="w-4 h-4"></i></div>
-                            <span id="statTasksPercent" class="text-[11px] font-bold text-violet-500">0%</span>
-                        </div>
-                        <p id="statTasksCount" class="font-display font-bold text-lg">0/0</p>
-                        <p class="text-[11px] text-slate-400">Tareas hoy</p>
-                    </button>
-
-                    <button onclick="switchTab('habits')" class="p-3 rounded-2xl bg-slate-100/90 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 text-left">
-                        <div class="flex items-center justify-between mb-1">
-                            <div class="w-7 h-7 rounded-xl bg-teal-500/15 text-teal-600 flex items-center justify-center"><i data-lucide="dumbbell" class="w-4 h-4"></i></div>
-                            <span id="statGymSplitBadge" class="text-[10px] font-bold text-teal-500">Empuje</span>
-                        </div>
-                        <p id="statHabitsCount" class="font-display font-bold text-lg">0/0</p>
-                        <p class="text-[11px] text-slate-400">Ejercicios</p>
-                    </button>
-
-                    <button onclick="switchTab('finance')" class="p-3 rounded-2xl bg-slate-100/90 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 text-left">
-                        <div class="flex items-center justify-between mb-1">
-                            <div class="w-7 h-7 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center"><i data-lucide="wallet" class="w-4 h-4"></i></div>
-                            <span class="text-[11px] font-bold text-amber-500">Mes</span>
-                        </div>
-                        <p id="statFinanceTotal" class="font-display font-bold text-lg truncate">$0</p>
-                        <p class="text-[11px] text-slate-400">Gastos</p>
-                    </button>
-                </div>
-
-                <!-- Priority Tasks Preview -->
-                <div>
-                    <div class="flex items-center justify-between mb-2.5">
-                        <h2 class="font-display font-bold text-sm flex items-center gap-1.5"><i data-lucide="target" class="w-4 h-4 text-violet-500"></i> Foco Principal</h2>
-                        <button onclick="switchTab('tasks')" class="text-xs text-violet-600 dark:text-violet-400 font-medium hover:underline">Ver todas →</button>
-                    </div>
-                    <div id="homeTasksList" class="space-y-2"></div>
-                </div>
-
-                <!-- Quick Gym Preview Row -->
-                <div>
-                    <div class="flex items-center justify-between mb-2.5">
-                        <h2 class="font-display font-bold text-sm flex items-center gap-1.5"><i data-lucide="dumbbell" class="w-4 h-4 text-teal-500"></i> <span>Entreno en Casa: <span id="homeActiveSplitName" class="text-teal-600 dark:text-teal-400">Empuje</span></span></h2>
-                        <button onclick="switchTab('habits')" class="text-xs text-teal-600 dark:text-teal-400 font-medium hover:underline">Abrir Rutina →</button>
-                    </div>
-                    <div id="homeHabitsGrid" class="grid grid-cols-2 gap-2.5"></div>
-                </div>
-
-                <!-- Smart Notes -->
-                <div class="space-y-2.5">
-                    <div class="flex items-center justify-between">
-                        <h2 class="font-display font-bold text-sm flex items-center gap-1.5"><i data-lucide="sticky-note" class="w-4 h-4 text-amber-500"></i> Notas & Recordatorios (Nube)</h2>
-                        <button onclick="openQuickNoteModal()" class="text-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-xl font-semibold transition">+ Nota ventana</button>
-                    </div>
-                    <div class="flex gap-2">
-                        <input id="inlineNoteInput" type="text" placeholder="Escribí una nota..." class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-3.5 py-2 text-xs focus:outline-none focus:border-amber-500" onkeydown="if(event.key==='Enter') addInlineNote()">
-                        <button onclick="addInlineNote()" class="px-3.5 py-2 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition shrink-0">Guardar</button>
-                    </div>
-                    <div id="notesList" class="space-y-2"></div>
-                </div>
-            </div>
-
-            <!-- ==================== TAB 2: TAREAS ==================== -->
-            <div id="tab-tasks" class="space-y-4 hidden">
-                <div class="flex items-center justify-between">
+            <h2 class="text-3xl font-extrabold mb-2">Hola, <span id="welcomeNickname" class="text-yellow-300"></span>!</h2>
+            <p class="text-purple-200 mb-8 text-sm">Crea una nueva sala para invitar a tus amigos o únete a una existente.</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                <div class="bg-white/5 border border-white/10 p-6 rounded-2xl flex flex-col justify-between">
                     <div>
-                        <h2 class="font-display font-bold text-lg">Mis Tareas & Agenda</h2>
-                        <p class="text-xs text-slate-500">Tocá la varita ✨ para dividir en micro-pasos con IA.</p>
+                        <h3 class="font-bold text-lg text-pink-300 mb-2"><i class="fa-solid fa-plus-circle mr-2"></i>Crear Sala</h3>
+                        <p class="text-xs text-purple-200 mb-4">Inicia una partida configurando rondas y tiempo.</p>
                     </div>
-                    <button onclick="reorganizeTasksWithAI()" class="px-3 py-2 rounded-2xl bg-violet-600/15 text-violet-600 dark:text-violet-300 border border-violet-500/30 text-xs font-semibold flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Priorizar IA</button>
+                    <button onclick="showCreateRoomModal()" class="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 font-bold rounded-xl shadow hover:opacity-95 transition">Crear Sala</button>
                 </div>
-                <div class="flex gap-2">
-                    <input id="newTaskInput" type="text" placeholder="Nueva tarea..." class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-violet-500" onkeydown="if(event.key==='Enter') addManualTask()">
-                    <select id="newTaskCategory" class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-2.5 text-xs font-medium">
-                        <option value="Prioridad">🔥 Prioridad</option>
-                        <option value="Trabajo">💼 Trabajo</option>
-                        <option value="Personal">🏠 Personal</option>
-                        <option value="Salud">🌱 Salud</option>
-                    </select>
-                    <button onclick="addManualTask()" class="px-3.5 rounded-2xl bg-violet-600 text-white font-semibold text-sm">+</button>
+
+                <div class="bg-white/5 border border-white/10 p-6 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-lg text-yellow-300 mb-2"><i class="fa-solid fa-right-to-bracket mr-2"></i>Unirse a Sala</h3>
+                        <p class="text-xs text-purple-200 mb-4">Ingresa el código de 4 letras de la sala de tu amigo.</p>
+                    </div>
+                    <button onclick="showJoinRoomModal()" class="w-full py-3 bg-gradient-to-r from-yellow-500 to-amber-600 font-bold rounded-xl shadow hover:opacity-95 transition">Unirse</button>
                 </div>
-                <div id="fullTasksList" class="space-y-2.5"></div>
             </div>
 
-            <!-- ==================== TAB 3: GYM & CALISTENIA ==================== -->
-            <div id="tab-habits" class="space-y-4 hidden">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="font-display font-bold text-lg flex items-center gap-2">
-                            <span>Entreno en Casa</span>
-                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-300 border border-teal-500/30">Sin Barra</span>
-                        </h2>
-                        <p class="text-xs text-slate-400">100% peso corporal sin máquinas ni barra para colgarse.</p>
-                    </div>
-                    <button onclick="generateGymRoutineWithAI()" class="px-3 py-2 rounded-2xl bg-teal-500/15 text-teal-600 dark:text-teal-300 border border-teal-500/30 text-xs font-semibold flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Armar Rutina IA</button>
-                </div>
+            <button onclick="logoutUser()" class="text-xs text-purple-300 hover:text-white underline">Cambiar mi apodo</button>
+        </div>
 
-                <!-- Split Selector -->
-                <div>
-                    <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                        <button onclick="selectGymSplit('Empuje')" id="split-Empuje" class="gym-split-btn px-3.5 py-2 rounded-2xl text-xs font-semibold bg-teal-600 text-white whitespace-nowrap">💪 Empuje</button>
-                        <button onclick="selectGymSplit('Tirón')" id="split-Tirón" class="gym-split-btn px-3.5 py-2 rounded-2xl text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap">🦅 Tirón (Suelo)</button>
-                        <button onclick="selectGymSplit('Piernas')" id="split-Piernas" class="gym-split-btn px-3.5 py-2 rounded-2xl text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap">🦵 Piernas</button>
-                        <button onclick="selectGymSplit('FullBody')" id="split-FullBody" class="gym-split-btn px-3.5 py-2 rounded-2xl text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap">🔥 Full Body</button>
-                    </div>
-                </div>
-
-                <!-- Rest Timer & Hydration -->
-                <div class="grid grid-cols-12 gap-2.5">
-                    <div class="col-span-7 p-3.5 rounded-3xl bg-slate-900 text-white flex flex-col justify-between">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[11px] text-slate-400 font-medium flex items-center gap-1"><i data-lucide="timer" class="w-3.5 h-3.5 text-teal-400"></i> Descanso</span>
-                            <div class="flex items-center gap-1.5">
-                                <span id="restTimerDisplay" class="font-display font-extrabold text-lg text-teal-400">00:00</span>
-                                <button onclick="stopRestTimer()" class="p-1 rounded-lg bg-white/10 text-slate-300"><i data-lucide="rotate-ccw" class="w-3 h-3"></i></button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-1.5 mt-2.5">
-                            <button onclick="startRestTimer(60)" class="py-1.5 rounded-xl bg-white/10 hover:bg-teal-500 hover:text-slate-950 text-[11px] font-bold transition">60s</button>
-                            <button onclick="startRestTimer(90)" class="py-1.5 rounded-xl bg-white/10 hover:bg-teal-500 hover:text-slate-950 text-[11px] font-bold transition">90s</button>
-                            <button onclick="startRestTimer(120)" class="py-1.5 rounded-xl bg-white/10 hover:bg-teal-500 hover:text-slate-950 text-[11px] font-bold transition">2m</button>
-                        </div>
-                    </div>
-
-                    <div class="col-span-5 p-3.5 rounded-3xl bg-gradient-to-br from-sky-500/15 to-teal-500/15 border border-teal-500/25 flex flex-col justify-between">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[11px] font-bold text-teal-300">💧 Agua</span>
-                            <span id="waterLabel" class="text-[11px] font-bold text-sky-400">5/8</span>
-                        </div>
-                        <div class="flex items-center gap-1 my-1">
-                            <button onclick="changeWater(-1)" class="w-7 h-7 rounded-lg bg-slate-800 text-xs font-bold">-</button>
-                            <button onclick="changeWater(1)" class="flex-1 h-7 rounded-lg bg-sky-500 text-white text-[11px] font-semibold">+ Vaso</button>
-                        </div>
-                        <button onclick="toggleSupplement('creatine')" id="suppCreatineBtn" class="w-full py-1 rounded-lg text-[10px] font-semibold border transition">⚡ Proteína / Movilidad</button>
-                    </div>
-                </div>
-
-                <!-- Add Exercise Form -->
-                <div class="p-3.5 rounded-3xl bg-slate-800/50 border border-slate-800 space-y-2.5">
-                    <p class="text-xs font-semibold text-slate-300">Agregar ejercicio a <span id="formSplitLabel" class="text-teal-400">Empuje</span></p>
-                    <div class="grid grid-cols-12 gap-2">
-                        <input id="newExerciseName" type="text" placeholder="Ej: Flexiones diamante" class="col-span-6 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs focus:outline-none">
-                        <input id="newExerciseSets" type="text" placeholder="4 series" value="4 series" class="col-span-3 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-center">
-                        <input id="newExerciseWeight" type="number" placeholder="Reps" value="15" class="col-span-3 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-center">
-                    </div>
-                    <button onclick="addManualExercise()" class="w-full py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-semibold text-xs transition">+ Sumar Ejercicio Corporal</button>
-                </div>
-
-                <div id="fullHabitsList" class="space-y-2.5"></div>
+        <!-- Vista 2: Sala de Espera (Lobby) -->
+        <div id="lobbyView" class="hidden w-full max-w-xl bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl text-center">
+            <h2 class="text-3xl font-extrabold mb-1">Sala de Espera</h2>
+            <p class="text-purple-200 text-sm mb-6">Comparte el código con hasta 4 amigos para jugar juntos.</p>
+            
+            <div class="bg-black/30 border border-white/10 p-4 rounded-2xl mb-6">
+                <span class="text-xs text-purple-300 block mb-1">CÓDIGO DE SALA</span>
+                <span id="lobbyRoomCode" class="text-4xl font-extrabold text-yellow-300 tracking-widest">----</span>
             </div>
 
-            <!-- ==================== TAB 4: FINANZAS ==================== -->
-            <div id="tab-finance" class="space-y-5 hidden">
-                <div class="flex items-center justify-between">
+            <div class="mb-6 text-left">
+                <h3 class="text-sm font-bold text-purple-200 mb-3"><i class="fa-solid fa-users mr-2"></i>Jugadores Conectados (<span id="playerCount">0</span>/4)</h3>
+                <div id="playersListContainer" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+
+            <div id="hostControls" class="hidden space-y-4">
+                <div class="grid grid-cols-2 gap-4 text-left">
                     <div>
-                        <h2 class="font-display font-bold text-lg">Billetera & Gastos</h2>
-                        <p class="text-xs text-slate-400">Control rápido de presupuesto mensual.</p>
-                    </div>
-                    <button onclick="analyzeFinancesWithAI()" class="px-3 py-2 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-semibold"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Consejo IA</button>
-                </div>
-
-                <div class="p-4 rounded-3xl bg-slate-900 text-white space-y-3">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-xs text-slate-400">Gastado este mes</p>
-                            <p id="financeTotalBig" class="font-display font-extrabold text-2xl">$0</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-xs text-slate-400">Meta</p>
-                            <p id="budgetLimitLabel" class="text-sm font-semibold text-amber-400">$450.000</p>
-                        </div>
-                    </div>
-                    <div class="w-full h-2.5 bg-slate-700 rounded-full overflow-hidden">
-                        <div id="budgetProgressBar" class="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 rounded-full" style="width: 30%"></div>
-                    </div>
-                    <p id="financeAiInsightBox" class="text-xs text-slate-300 bg-white/5 p-2.5 rounded-2xl">💡 Tocá "Consejo IA" para analizar tus gastos.</p>
-                </div>
-
-                <div class="p-3.5 rounded-3xl bg-slate-800/50 border border-slate-800 space-y-2.5">
-                    <p class="text-xs font-semibold text-slate-300">Registrar gasto manual</p>
-                    <div class="grid grid-cols-12 gap-2">
-                        <input id="expenseTitle" type="text" placeholder="Concepto" class="col-span-6 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs">
-                        <input id="expenseAmount" type="number" placeholder="Monto $" class="col-span-3 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs">
-                        <select id="expenseCategory" class="col-span-3 bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-200">
-                            <option value="Comida">🍔 Comida</option>
-                            <option value="Salud">🌱 Salud</option>
-                            <option value="Transporte">🚌 Viaje</option>
-                            <option value="Hogar">🏠 Hogar</option>
-                            <option value="Ocio">🎉 Ocio</option>
+                        <label class="block text-xs text-purple-200 mb-1">Rondas</label>
+                        <select id="lobbyRounds" class="w-full bg-white/10 border border-white/25 rounded-xl px-3 py-2 text-sm text-white">
+                            <option value="3" class="bg-gray-900">3 Rondas</option>
+                            <option value="5" selected class="bg-gray-900">5 Rondas</option>
+                            <option value="10" class="bg-gray-900">10 Rondas</option>
                         </select>
                     </div>
-                    <button onclick="addManualExpense()" class="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs">+ Guardar Gasto</button>
-                </div>
-
-                <div id="expensesList" class="space-y-2"></div>
-            </div>
-
-            <!-- ==================== TAB 5: COACH IA ==================== -->
-            <div id="tab-ai" class="space-y-4 hidden flex flex-col h-[calc(100vh-220px)]">
-                <div class="flex items-center justify-between shrink-0">
                     <div>
-                        <h2 class="font-display font-bold text-lg flex items-center gap-1.5"><span>Coach IA Personal</span> <span class="w-2 h-2 rounded-full bg-emerald-400"></span></h2>
-                        <p class="text-xs text-slate-400">Conoce tu panel para ayudarte con todo.</p>
+                        <label class="block text-xs text-purple-200 mb-1">Tiempo (seg)</label>
+                        <select id="lobbyTime" class="w-full bg-white/10 border border-white/25 rounded-xl px-3 py-2 text-sm text-white">
+                            <option value="45" class="bg-gray-900">45s</option>
+                            <option value="60" selected class="bg-gray-900">60s</option>
+                            <option value="90" class="bg-gray-900">90s</option>
+                        </select>
                     </div>
-                    <button onclick="clearChat()" class="text-xs text-slate-400 hover:text-rose-400 px-2 py-1">Limpiar</button>
                 </div>
-                <div id="chatContainer" class="flex-1 overflow-y-auto space-y-3 pr-1 no-scrollbar"></div>
-                <div class="shrink-0 pt-1">
-                    <div class="flex items-center gap-2 bg-slate-800 p-1.5 rounded-2xl border border-slate-700">
-                        <input id="chatInput" type="text" placeholder="Preguntale lo que quieras a tu IA..." class="flex-1 bg-transparent px-3 py-2 text-sm focus:outline-none" onkeydown="if(event.key==='Enter') sendChatMessage()">
-                        <button onclick="sendChatMessage()" class="p-2.5 rounded-xl bg-violet-600 text-white hover:bg-violet-500"><i data-lucide="send" class="w-4 h-4"></i></button>
-                    </div>
+                <button onclick="startOnlineGame()" class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-bold text-lg rounded-xl shadow-lg transition">
+                    ¡Comenzar Partida! <i class="fa-solid fa-play ml-2"></i>
+                </button>
+            </div>
+            <div id="guestWaitingText" class="text-purple-300 text-sm animate-pulse py-3">
+                Esperando a que el anfitrión inicie la partida...
+            </div>
+            <button onclick="leaveRoom()" class="mt-4 text-xs text-red-400 hover:text-red-300 underline">Salir de la sala</button>
+        </div>
+
+        <!-- Vista 3: Ruleta / Sorteo de Letra -->
+        <div id="rouletteView" class="hidden w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl text-center">
+            <h2 class="text-2xl font-bold mb-2">Ronda <span id="rouletteRoundNum">1</span></h2>
+            <p class="text-purple-200 text-sm mb-6">El anfitrión está sorteando la letra...</p>
+            
+            <div id="rouletteBox" class="w-32 h-32 mx-auto bg-gradient-to-tr from-yellow-400 to-pink-500 rounded-3xl flex items-center justify-center text-6xl font-extrabold shadow-2xl mb-8 border-4 border-white/30 animate-pulse">
+                ?
+            </div>
+
+            <div id="hostSpinContainer" class="hidden">
+                <button onclick="hostSpinLetter()" id="spinBtn" class="w-full py-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 font-bold text-lg rounded-xl shadow-lg transition">
+                    ¡Sortear Letra! <i class="fa-solid fa-dice ml-2"></i>
+                </button>
+            </div>
+            <div id="guestSpinText" class="text-purple-300 text-sm animate-pulse">
+                Esperando la letra del anfitrión...
+            </div>
+        </div>
+
+        <!-- Vista 4: Formulario de Respuestas Online -->
+        <div id="playView" class="hidden w-full max-w-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-6 sm:p-8 rounded-3xl shadow-2xl">
+            <div class="flex justify-between items-center mb-6 bg-white/5 p-4 rounded-2xl border border-white/10">
+                <div>
+                    <span class="text-xs uppercase tracking-wider text-purple-300 block">Letra actual</span>
+                    <span id="activeLetter" class="text-4xl font-extrabold text-yellow-300">A</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs uppercase tracking-wider text-purple-300 block">Tiempo restante</span>
+                    <span id="timerCountdown" class="text-3xl font-extrabold text-pink-400">60</span>
                 </div>
             </div>
 
-        </main>
+            <div id="categoriesContainer" class="space-y-3 mb-8 max-h-[50vh] overflow-y-auto pr-2">
+                <!-- Se inyectan las 7 categorías solicitadas -->
+            </div>
 
-        <!-- BOTTOM NAVIGATION BAR -->
-        <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 z-40 w-full max-w-md bg-white/90 dark:bg-slate-900/95 glass-card border-t border-slate-800 px-3 py-2 flex items-center justify-around">
-            <button onclick="switchTab('home')" id="nav-home" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 rounded-2xl text-violet-400 font-semibold transition"><i data-lucide="layout-grid" class="w-5 h-5"></i><span class="text-[10px]">Inicio</span></button>
-            <button onclick="switchTab('tasks')" id="nav-tasks" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 rounded-2xl text-slate-400 transition"><i data-lucide="check-circle-2" class="w-5 h-5"></i><span class="text-[10px]">Tareas</span></button>
-            <button onclick="switchTab('ai')" id="nav-ai" class="relative -top-3 w-13 h-13 p-3.5 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-500 to-teal-400 text-white shadow-lg flex items-center justify-center"><i data-lucide="bot" class="w-6 h-6"></i></button>
-            <button onclick="switchTab('habits')" id="nav-habits" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 rounded-2xl text-slate-400 transition"><i data-lucide="dumbbell" class="w-5 h-5"></i><span class="text-[10px]">Entreno</span></button>
-            <button onclick="switchTab('finance')" id="nav-finance" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 rounded-2xl text-slate-400 transition"><i data-lucide="wallet" class="w-5 h-5"></i><span class="text-[10px]">Gastos</span></button>
-        </nav>
-    </div>
+            <button onclick="submitAltoElFuego()" class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-bold text-lg rounded-xl shadow-lg transition transform hover:-translate-y-0.5">
+                ¡ALTO EL FUEGO! <i class="fa-solid fa-hand-paper ml-2"></i>
+            </button>
+        </div>
 
-    <!-- Pomodoro Modal -->
-    <div id="pomodoroModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl">
-            <div id="modalTimerDisplay" class="font-display font-extrabold text-5xl text-white">25:00</div>
-            <div class="flex gap-2">
-                <button onclick="togglePomodoroRun()" class="flex-1 py-3 rounded-2xl bg-violet-600 text-white font-semibold text-sm">Iniciar / Pausar</button>
-                <button onclick="togglePomodoroModal()" class="px-4 py-3 rounded-2xl bg-slate-800 text-slate-300 text-sm">Cerrar</button>
+        <!-- Vista 5: Puntajes de la Ronda / Finales -->
+        <div id="scoresView" class="hidden w-full max-w-xl bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl text-center">
+            <div class="inline-block p-4 rounded-full bg-gradient-to-tr from-yellow-400 to-amber-600 mb-4 shadow-xl">
+                <i class="fa-solid fa-trophy text-4xl text-white"></i>
+            </div>
+            <h2 id="scoresTitle" class="text-3xl font-extrabold mb-2">Puntajes de la Ronda</h2>
+            <p id="scoresSubtitle" class="text-purple-200 mb-6 text-sm">Resumen de respuestas y puntos acumulados.</p>
+
+            <div id="scoresListContainer" class="bg-black/30 rounded-2xl p-4 mb-8 border border-white/10 space-y-4 max-h-60 overflow-y-auto text-left">
+                <!-- Dinámico -->
+            </div>
+
+            <div id="hostNextContainer" class="hidden">
+                <button onclick="hostNextRound()" class="w-full py-4 bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 font-bold text-lg rounded-xl shadow-lg transition">
+                    Siguiente Ronda <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+            <div id="guestNextText" class="text-purple-300 text-sm animate-pulse">
+                Esperando a que el anfitrión continúe...
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal para Crear / Unirse a Sala -->
+    <div id="actionModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-gray-900 border border-white/20 p-6 rounded-3xl max-w-sm w-full text-center shadow-2xl">
+            <h3 id="modalActionTitle" class="text-xl font-bold mb-4 text-yellow-300">Unirse a Sala</h3>
+            <div id="modalActionContent" class="mb-6">
+                <input type="text" id="joinCodeInput" maxlength="4" placeholder="CÓDIGO (Ej. AB12)" 
+                    class="w-full bg-white/10 border border-white/25 rounded-xl px-4 py-3 text-center text-white placeholder-purple-300/50 uppercase tracking-widest font-extrabold text-xl focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="closeActionModal()" class="w-1/2 py-3 bg-gray-800 hover:bg-gray-700 font-bold rounded-xl">Cancelar</button>
+                <button id="modalActionBtn" onclick="confirmJoinRoom()" class="w-1/2 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 font-bold rounded-xl">Unirse</button>
             </div>
         </div>
     </div>
 
-    <!-- Custom Modal -->
-    <div id="customModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-            <h3 id="customModalTitle" class="font-display font-bold text-base">Nota Rápida</h3>
-            <input id="customModalInput" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-violet-500">
-            <div class="flex justify-end gap-2">
-                <button onclick="closeCustomModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-semibold">Cancelar</button>
-                <button id="customModalConfirmBtn" class="px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-semibold">Guardar</button>
-            </div>
+    <!-- Custom Notification Modal -->
+    <div id="customModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-gray-900 border border-white/20 p-6 rounded-3xl max-w-sm w-full text-center shadow-2xl">
+            <div id="modalIcon" class="text-4xl text-yellow-400 mb-3"><i class="fa-solid fa-circle-exclamation"></i></div>
+            <h3 id="modalTitle" class="text-xl font-bold mb-2">Aviso</h3>
+            <p id="modalMessage" class="text-gray-300 text-sm mb-6">Mensaje aquí...</p>
+            <button onclick="closeModal()" class="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 font-bold rounded-xl shadow">Entendido</button>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-xs font-semibold shadow-xl transition-all duration-300 opacity-0 pointer-events-none">
-        <span id="toastText">Listo</span>
-    </div>
+    <!-- Footer -->
+    <footer class="w-full py-4 text-center text-xs text-purple-300 border-t border-white/10 bg-black/20">
+        Tutti Frutti Multijugador Online &bull; ¡Diviértete con amigos!
+    </footer>
 
-    <!-- FIREBASE & LOGICA COMPLETA -->
+    <!-- Firebase SDK Imports -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyC9C5o1cY9D8wRTn8F--XTgGGztuu9cyYQ",
-            authDomain: "auralifeos-2d99e.firebaseapp.com",
-            projectId: "auralifeos-2d99e",
-            storageBucket: "auralifeos-2d99e.firebasestorage.app",
-            messagingSenderId: "149152660489",
-            appId: "1:149152660489:web:a093b7140e1921eb73ccd8"
-        };
+        // Configuración Global Firebase
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tutti-frutti-online-game';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        let app, db, auth;
+        let currentUser = null;
+        let currentRoomId = null;
+        let roomUnsubscribe = null;
+        let timerInterval = null;
 
-        window.state = {
-            currentUserUid: null,
-            streakDays: 5,
-            waterGlasses: 5,
-            proteinMeals: 2,
-            creatineDone: true,
-            budgetLimit: 450000,
-            activeFilter: 'todas',
-            activeGymSplit: 'Empuje',
-            tasks: [
-                { id: 't1', title: 'Terminar entrega y enviar correo', category: 'Prioridad', completed: false, time: '11:00 hs', subtasks: [] },
-                { id: 't2', title: 'Comprar huevos, pollo y verduras', category: 'Personal', completed: false, time: '18:30 hs', subtasks: [] }
-            ],
-            gymExercises: [
-                { id: 'g1', split: 'Empuje', title: 'Flexiones Clásicas', sets: '4 series', completedSets: 4, weight: 15, doneToday: true, note: 'Pecho casi al piso' },
-                { id: 'g2', split: 'Empuje', title: 'Flexiones Pica (Hombros)', sets: '4 series', completedSets: 0, weight: 12, doneToday: false, note: 'Cadera arriba' },
-                { id: 'g3', split: 'Tirón', title: 'Empuje de Codos contra el Piso', sets: '4 series', completedSets: 0, weight: 15, doneToday: false, note: 'Apretar espalda' },
-                { id: 'g4', split: 'Piernas', title: 'Sentadillas Búlgaras', sets: '4 series', completedSets: 0, weight: 12, doneToday: false, note: 'Pie en silla' },
-                { id: 'g5', split: 'FullBody', title: 'Burpees Dinámicos', sets: '4 series', completedSets: 0, weight: 12, doneToday: false, note: 'Ritmo continuo' }
-            ],
-            expenses: [
-                { id: 'e1', title: 'Compra semanal carnicería y huevos', amount: 34500, category: 'Comida', date: 'Hoy' }
-            ],
-            notes: [
-                { id: 'n1', text: '📌 Meta del mes: 25 flexiones seguidas sin parar.' }
-            ],
-            chat: [
-                { role: 'assistant', text: '¡Hola! Soy Aura. Tu panel está sincronizado en la nube de Google y listo con tu rutina de calistenia en casa. ¿Qué entrenamos o resolvemos hoy?' }
-            ]
-        };
+        // Categorías exactas solicitadas
+        const CATEGORIES = [
+            "Cosas",
+            "Nombre",
+            "Color",
+            "Fruta o Verdura",
+            "País y Provincia",
+            "Animal",
+            "Marca"
+        ];
 
-        // Auth
-        window.registerUser = async () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passInput').value;
-            const err = document.getElementById('authError');
-            try { await createUserWithEmailAndPassword(auth, email, pass); err.textContent = ""; } catch (e) { err.textContent = "Error: " + e.message; }
-        };
+        const ALPHABET = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "L", "M", "N", "P", "Q", "R", "S", "T", "U", "V"];
 
-        window.loginUser = async () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passInput').value;
-            const err = document.getElementById('authError');
-            try { await signInWithEmailAndPassword(auth, email, pass); err.textContent = ""; } catch (e) { err.textContent = "Datos incorrectos."; }
-        };
-
-        window.logoutUser = async () => { await signOut(auth); };
-
-        onAuthStateChanged(auth, (user) => {
-            const authScreen = document.getElementById('authScreen');
-            const mainApp = document.getElementById('mainApp');
-            if (user) {
-                window.state.currentUserUid = user.uid;
-                authScreen.classList.add('hidden');
-                mainApp.classList.remove('hidden');
-                loadUserData(user.uid);
-            } else {
-                window.state.currentUserUid = null;
-                authScreen.classList.remove('hidden');
-                mainApp.classList.add('hidden');
-            }
-        });
-
-        async function loadUserData(uid) {
+        window.onload = async function() {
             try {
-                const q = query(collection(db, "notes"), where("uid", "==", uid));
-                const snap = await getDocs(q);
-                if (!snap.empty) {
-                    window.state.notes = [];
-                    snap.forEach(d => window.state.notes.push({ id: d.id, text: d.data().text }));
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
                 }
-                renderAll();
-            } catch (e) { console.error(e); }
+                currentUser = auth.currentUser;
+                document.getElementById('headerUserInfo').innerText = `ID: ${currentUser.uid.substring(0, 6)}...`;
+
+                // Verificar si ya tiene nickname guardado en localStorage local
+                const savedNick = localStorage.getItem('tf_nickname');
+                if (savedNick) {
+                    document.getElementById('nicknameInput').value = savedNick;
+                    saveNickname();
+                }
+            } catch (e) {
+                console.error("Error Firebase init:", e);
+                showModal("Error", "No se pudo conectar al servidor online.");
+            }
+        };
+
+        window.saveNickname = function() {
+            const nick = document.getElementById('nicknameInput').value.trim();
+            if (!nick) {
+                showModal("Atención", "Por favor ingresa un apodo válido.");
+                return;
+            }
+            localStorage.setItem('tf_nickname', nick);
+            document.getElementById('welcomeNickname').innerText = nick;
+            switchView('menuView');
+        };
+
+        window.logoutUser = function() {
+            localStorage.removeItem('tf_nickname');
+            switchView('loginView');
+        };
+
+        function switchView(viewId) {
+            ['loginView', 'menuView', 'lobbyView', 'rouletteView', 'playView', 'scoresView'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
         }
 
-        window.addInlineNote = async () => {
-            const inp = document.getElementById('inlineNoteInput');
-            const text = inp.value.trim();
-            if (!text || !window.state.currentUserUid) return;
+        window.showModal = function(title, message) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('customModal').classList.remove('hidden');
+            document.getElementById('customModal').classList.add('flex');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('customModal').classList.remove('flex');
+            document.getElementById('customModal').classList.add('hidden');
+        };
+
+        window.showCreateRoomModal = async function() {
+            if (!currentUser) return;
+            const nick = localStorage.getItem('tf_nickname');
+            const roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+            
+            const roomData = {
+                roomCode: roomCode,
+                hostUid: currentUser.uid,
+                status: 'lobby', // lobby, roulette, playing, review, scores, finished
+                rounds: 5,
+                timePerRound: 60,
+                currentRound: 1,
+                activeLetter: '',
+                players: {
+                    [currentUser.uid]: {
+                        uid: currentUser.uid,
+                        nickname: nick,
+                        score: 0,
+                        answers: {},
+                        submitted: false
+                    }
+                },
+                createdAt: Date.now()
+            };
+
             try {
-                const docRef = await addDoc(collection(db, "notes"), { uid: window.state.currentUserUid, text: '📌 ' + text, createdAt: new Date() });
-                window.state.notes.unshift({ id: docRef.id, text: '📌 ' + text });
-                inp.value = '';
-                renderAll();
-                showToast('Nota guardada en la nube');
-            } catch (e) { console.error(e); }
-        };
-
-        window.deleteNote = async (id) => {
-            try {
-                await deleteDoc(doc(db, "notes", id));
-                window.state.notes = window.state.notes.filter(n => n.id !== id);
-                renderAll();
-                showToast('Nota eliminada');
-            } catch (e) { console.error(e); }
-        };
-
-        // Navigation & UI
-        window.switchTab = (tabName) => {
-            ['home', 'tasks', 'habits', 'finance', 'ai'].forEach(t => {
-                const el = document.getElementById(`tab-${t}`);
-                if (el) el.classList.add('hidden');
-            });
-            const target = document.getElementById(`tab-${tabName}`);
-            if (target) target.classList.remove('hidden');
-            if (tabName === 'ai') renderChat();
-            lucide.createIcons();
-        };
-
-        window.showToast = (msg) => {
-            const t = document.getElementById('toast');
-            document.getElementById('toastText').innerText = msg;
-            t.classList.remove('opacity-0'); t.classList.add('opacity-100');
-            setTimeout(() => { t.classList.remove('opacity-100'); t.classList.add('opacity-0'); }, 3000);
-        };
-
-        window.renderAll = () => {
-            // Stats & Home
-            const totalTasks = window.state.tasks.length;
-            const doneTasks = window.state.tasks.filter(t => t.completed).length;
-            document.getElementById('statTasksCount').innerText = `${doneTasks}/${totalTasks}`;
-            document.getElementById('statTasksPercent').innerText = totalTasks ? `${Math.round((doneTasks/totalTasks)*100)}%` : '0%';
-
-            const splitExs = window.state.gymExercises.filter(g => g.split === window.state.activeGymSplit);
-            const doneGym = splitExs.filter(g => g.doneToday).length;
-            document.getElementById('statHabitsCount').innerText = `${doneGym}/${splitExs.length}`;
-            document.getElementById('statGymSplitBadge').innerText = window.state.activeGymSplit;
-            document.getElementById('homeActiveSplitName').innerText = window.state.activeGymSplit;
-            document.getElementById('formSplitLabel').innerText = window.state.activeGymSplit;
-
-            const totalSpent = window.state.expenses.reduce((s, e) => s + e.amount, 0);
-            const fmtSpent = '$' + totalSpent.toLocaleString('es-AR');
-            document.getElementById('statFinanceTotal').innerText = fmtSpent;
-            document.getElementById('financeTotalBig').innerText = fmtSpent;
-
-            // Home Tasks Preview
-            document.getElementById('homeTasksList').innerHTML = window.state.tasks.slice(0, 2).map(t => `
-                <div class="p-3 rounded-2xl bg-slate-800/60 border border-slate-700 flex justify-between items-center text-xs">
-                    <span class="${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</span>
-                    <button onclick="toggleTask('${t.id}')" class="px-2 py-1 rounded bg-violet-600/30 text-violet-300">${t.completed ? 'Hecho' : 'Pendiente'}</button>
-                </div>
-            `).join('');
-
-            // Full Tasks List
-            document.getElementById('fullTasksList').innerHTML = window.state.tasks.map(t => `
-                <div class="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700 flex justify-between items-center text-xs">
-                    <span class="${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</span>
-                    <button onclick="toggleTask('${t.id}')" class="px-2.5 py-1 rounded bg-violet-600 text-white">${t.completed ? 'Completada' : 'Completar'}</button>
-                </div>
-            `).join('');
-
-            // Home Gym Grid
-            document.getElementById('homeHabitsGrid').innerHTML = splitExs.slice(0, 4).map(ex => `
-                <button onclick="toggleGymExercise('${ex.id}')" class="p-3 rounded-2xl border text-left flex justify-between items-center ${ex.doneToday ? 'bg-teal-500/15 border-teal-500 text-teal-300' : 'bg-slate-800/50 border-slate-700 text-slate-300'}">
-                    <div><p class="text-xs font-semibold truncate">${ex.title}</p><p class="text-[10px] text-slate-400">${ex.weight} reps</p></div>
-                    <span>${ex.doneToday ? '✓' : '○'}</span>
-                </button>
-            `).join('');
-
-            // Full Gym Exercises List
-            document.getElementById('fullHabitsList').innerHTML = splitExs.map(ex => `
-                <div class="p-3.5 rounded-2xl bg-slate-800/60 border ${ex.doneToday ? 'border-teal-500/50' : 'border-slate-700'} space-y-2">
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="font-semibold ${ex.doneToday ? 'line-through text-slate-400' : ''}">${ex.title}</span>
-                        <div class="flex items-center gap-1">
-                            <button onclick="adjustWeight('${ex.id}', -1)" class="w-6 h-6 rounded bg-slate-900 font-bold">-</button>
-                            <span class="px-2 text-teal-400 font-bold">${ex.weight} reps</span>
-                            <button onclick="adjustWeight('${ex.id}', 1)" class="w-6 h-6 rounded bg-slate-900 font-bold">+</button>
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-center pt-1 border-t border-slate-700">
-                        <button onclick="incrementSet('${ex.id}')" class="text-[11px] font-bold text-teal-300">Series: ${ex.completedSets || 0}/${parseInt(ex.sets)} (+1 y descansar)</button>
-                        <button onclick="toggleGymExercise('${ex.id}')" class="px-2 py-1 rounded bg-teal-600/30 text-teal-300 text-[10px] font-semibold">Hecho ✓</button>
-                    </div>
-                </div>
-            `).join('');
-
-            // Notes List
-            document.getElementById('notesList').innerHTML = window.state.notes.length === 0 ? `<p class="text-xs text-slate-500 italic">No hay notas todavía.</p>` :
-                window.state.notes.map(n => `<div class="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex justify-between items-center text-xs"><span>${n.text}</span><button onclick="deleteNote('${n.id}')" class="text-rose-400">✕</button></div>`).join('');
-
-            // Expenses List
-            document.getElementById('expensesList').innerHTML = window.state.expenses.map(e => `
-                <div class="p-3 rounded-2xl bg-slate-800/50 border border-slate-700 flex justify-between items-center text-xs">
-                    <div><p class="font-semibold">${e.title}</p><p class="text-[10px] text-slate-400">${e.category}</p></div>
-                    <span class="font-bold text-amber-400">-$${e.amount.toLocaleString('es-AR')}</span>
-                </div>
-            `).join('');
-
-            lucide.createIcons();
-        };
-
-        // Task & Gym Logic
-        window.toggleTask = (id) => { const t = window.state.tasks.find(x => x.id === id); if (t) { t.completed = !t.completed; renderAll(); } };
-        window.addManualTask = () => {
-            const inp = document.getElementById('newTaskInput');
-            const cat = document.getElementById('newTaskCategory').value;
-            if(!inp.value.trim()) return;
-            window.state.tasks.unshift({ id: 't_'+Date.now(), title: inp.value.trim(), category: cat, completed: false, time: 'Hoy', subtasks: [] });
-            inp.value=''; renderAll(); showToast('Tarea agregada');
-        };
-        window.selectGymSplit = (split) => { window.state.activeGymSplit = split; renderAll(); };
-        window.toggleGymExercise = (id) => { const g = window.state.gymExercises.find(x => x.id === id); if(g) { g.doneToday = !g.doneToday; g.completedSets = g.doneToday ? 4 : 0; renderAll(); } };
-        window.incrementSet = (id) => {
-            const g = window.state.gymExercises.find(x => x.id === id);
-            if(g) {
-                g.completedSets = (g.completedSets || 0) + 1;
-                if(g.completedSets >= 4) { g.doneToday = true; }
-                startRestTimer(60);
-                renderAll();
-                showToast('Serie sumada • Descanso 60s iniciado');
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', `rooms_${roomCode}`);
+                await setDoc(roomRef, roomData);
+                currentRoomId = roomCode;
+                enterLobby(roomCode);
+            } catch (e) {
+                console.error(e);
+                showModal("Error", "No se pudo crear la sala.");
             }
         };
-        window.adjustWeight = (id, delta) => { const g = window.state.gymExercises.find(x => x.id === id); if(g) { g.weight = Math.max(1, g.weight + delta); renderAll(); } };
-        window.addManualExercise = () => {
-            const name = document.getElementById('newExerciseName').value.trim();
-            const reps = Number(document.getElementById('newExerciseWeight').value) || 12;
-            if(!name) return;
-            window.state.gymExercises.push({ id: 'g_'+Date.now(), split: window.state.activeGymSplit, title: name, sets: '4 series', completedSets: 0, weight: reps, doneToday: false, note: 'Casa' });
-            document.getElementById('newExerciseName').value=''; renderAll(); showToast('Ejercicio sumado');
+
+        window.showJoinRoomModal = function() {
+            document.getElementById('modalActionTitle').innerText = "Unirse a Sala";
+            document.getElementById('modalActionContent').innerHTML = `
+                <input type="text" id="joinCodeInput" maxlength="4" placeholder="CÓDIGO (Ej. AB12)" 
+                    class="w-full bg-white/10 border border-white/25 rounded-xl px-4 py-3 text-center text-white placeholder-purple-300/50 uppercase tracking-widest font-extrabold text-xl focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            `;
+            document.getElementById('modalActionBtn').setAttribute('onclick', 'confirmJoinRoom()');
+            document.getElementById('actionModal').classList.remove('hidden');
+            document.getElementById('actionModal').classList.add('flex');
         };
 
-        // Rest Timer
-        let restInterval = null;
-        window.startRestTimer = (secs) => {
-            clearInterval(restInterval);
-            let left = secs;
-            const disp = document.getElementById('restTimerDisplay');
-            restInterval = setInterval(() => {
-                left--;
-                const m = String(Math.floor(left/60)).padStart(2,'0');
-                const s = String(left%60).padStart(2,'0');
-                if(disp) disp.innerText = `${m}:${s}`;
-                if(left <= 0) { clearInterval(restInterval); showToast('🔔 ¡Descanso terminado!'); }
+        window.closeActionModal = function() {
+            document.getElementById('actionModal').classList.remove('flex');
+            document.getElementById('actionModal').classList.add('hidden');
+        };
+
+        window.confirmJoinRoom = async function() {
+            const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+            if (code.length < 4) {
+                showModal("Atención", "Ingresa un código de 4 caracteres.");
+                return;
+            }
+
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', `rooms_${code}`);
+                const snap = await getDoc(roomRef);
+                if (!snap.exists()) {
+                    showModal("Error", "La sala no existe o ya finalizó.");
+                    return;
+                }
+
+                const data = snap.data();
+                const playersCount = Object.keys(data.players || {}).length;
+                if (!data.players[currentUser.uid] && playersCount >= 4) {
+                    showModal("Sala Llena", "Lo siento, esta sala ya tiene 4 jugadores.");
+                    return;
+                }
+
+                closeActionModal();
+                const nick = localStorage.getItem('tf_nickname');
+                
+                // Agregar jugador si no está
+                if (!data.players[currentUser.uid]) {
+                    data.players[currentUser.uid] = {
+                        uid: currentUser.uid,
+                        nickname: nick,
+                        score: 0,
+                        answers: {},
+                        submitted: false
+                    };
+                    await updateDoc(roomRef, { players: data.players });
+                }
+
+                currentRoomId = code;
+                enterLobby(code);
+            } catch (e) {
+                console.error(e);
+                showModal("Error", "No se pudo unir a la sala.");
+            }
+        };
+
+        function enterLobby(roomCode) {
+            document.getElementById('displayRoomCode').innerText = roomCode;
+            document.getElementById('lobbyRoomCode').innerText = roomCode;
+            document.getElementById('roomBadge').classList.remove('hidden');
+            switchView('lobbyView');
+            listenRoomChanges(roomCode);
+        }
+
+        function listenRoomChanges(roomCode) {
+            if (roomUnsubscribe) roomUnsubscribe();
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', `rooms_${roomCode}`);
+
+            roomUnsubscribe = onSnapshot(roomRef, (docSnap) => {
+                if (!docSnap.exists()) return;
+                const room = docSnap.data();
+                updateLobbyUI(room);
+                handleGameState(room);
+            }, (error) => {
+                console.error("Room snapshot error:", error);
+            });
+        }
+
+        function updateLobbyUI(room) {
+            const players = room.players || {};
+            const playerUids = Object.keys(players);
+            document.getElementById('playerCount').innerText = playerUids.length;
+
+            const listContainer = document.getElementById('playersListContainer');
+            listContainer.innerHTML = '';
+            playerUids.forEach(uid => {
+                const p = players[uid];
+                const isHost = uid === room.hostUid;
+                listContainer.innerHTML += `
+                    <div class="flex justify-between items-center bg-white/5 px-4 py-2.5 rounded-xl border border-white/10">
+                        <span class="font-bold text-white"><i class="fa-solid fa-user text-purple-400 mr-2"></i>${p.nickname} ${uid === currentUser.uid ? '(Tú)' : ''}</span>
+                        ${isHost ? '<span class="text-xs bg-yellow-500/20 text-yellow-300 px-2.5 py-1 rounded-lg border border-yellow-500/30">Anfitrión</span>' : '<span class="text-xs text-purple-300">Jugador</span>'}
+                    </div>
+                `;
+            });
+
+            const isHost = room.hostUid === currentUser.uid;
+            if (isHost && room.status === 'lobby') {
+                document.getElementById('hostControls').classList.remove('hidden');
+                document.getElementById('guestWaitingText').classList.add('hidden');
+            } else if (!isHost && room.status === 'lobby') {
+                document.getElementById('hostControls').classList.add('hidden');
+                document.getElementById('guestWaitingText').classList.remove('hidden');
+            }
+        }
+
+        function handleGameState(room) {
+            const status = room.status;
+            const isHost = room.hostUid === currentUser.uid;
+
+            if (status === 'roulette') {
+                switchView('rouletteView');
+                document.getElementById('rouletteRoundNum').innerText = room.currentRound;
+                document.getElementById('rouletteBox').innerText = room.activeLetter || '?';
+                
+                if (isHost && !room.activeLetter) {
+                    document.getElementById('hostSpinContainer').classList.remove('hidden');
+                    document.getElementById('guestSpinText').classList.add('hidden');
+                } else {
+                    document.getElementById('hostSpinContainer').classList.add('hidden');
+                    document.getElementById('guestSpinText').classList.remove('hidden');
+                }
+            } else if (status === 'playing') {
+                if (document.getElementById('playView').classList.contains('hidden')) {
+                    startPlayPhaseUI(room);
+                }
+            } else if (status === 'scores') {
+                showScoresUI(room);
+            }
+        }
+
+        window.startOnlineGame = async function() {
+            if (!currentRoomId) return;
+            const rounds = parseInt(document.getElementById('lobbyRounds').value);
+            const time = parseInt(document.getElementById('lobbyTime').value);
+
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', `rooms_${currentRoomId}`);
+            await updateDoc(roomRef, {
+                rounds: rounds,
+                timePerRound: time,
+                currentRound: 1,
+                status: 'roulette',
+                activeLetter: ''
+            });
+        };
+
+        window.hostSpinLetter = async function() {
+            if (!currentRoomId) return;
+            const randomLetter = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', `rooms_${currentRoomId}`);
+            await updateDoc(roomRef, {
+                activeLetter: randomLetter,
+                status: 'playing'
+            });
+        };
+
+        function startPlayPhaseUI(room) {
+            switchView('playView');
+            document.getElementById('activeLetter').innerText = room.activeLetter;
+
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = '';
+
+            CATEGORIES.forEach((cat, index) => {
+                container.innerHTML += `
+                    <div class="bg-white/5 border border-white/10 p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label class="font-semibold text-purple-200 text-sm sm:w-1/3">${cat}</label>
+                        <input type="text" id="cat_${index}" placeholder="Escribe con '${room.activeLetter}'..." 
+                            class="w-full sm:w-2/3 bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-pink-500 uppercase">
+                    </div>
+                `;
+            });
+
+            // Temporizador
+            let timeLeft = room.timePerRound;
+            document.getElementById('timerCountdown').innerText = timeLeft;
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerCountdown').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitAltoElFuego();
+                }
             }, 1000);
-        };
-        window.stopRestTimer = () => { clearInterval(restInterval); const disp = document.getElementById('restTimerDisplay'); if(disp) disp.innerText = '00:00'; };
+        }
 
-        // Expenses & Water
-        window.addManualExpense = () => {
-            const title = document.getElementById('expenseTitle').value.trim();
-            const amt = Number(document.getElementById('expenseAmount').value);
-            const cat = document.getElementById('expenseCategory').value;
-            if(!title || !amt) return;
-            window.state.expenses.unshift({ id: 'e_'+Date.now(), title, amount: amt, category: cat, date: 'Hoy' });
-            document.getElementById('expenseTitle').value=''; document.getElementById('expenseAmount').value=''; renderAll(); showToast('Gasto guardado');
-        };
-        window.changeWater = (d) => { window.state.waterGlasses = Math.max(0, window.state.waterGlasses + d); document.getElementById('waterLabel').innerText = `${window.state.waterGlasses}/8 vasos`; };
+        window.submitAltoElFuego = async function() {
+            if (timerInterval) clearInterval(timerInterval);
+            if (!currentRoomId || !currentUser) return;
 
-        // Chat & Omni
-        window.processOmniInput = () => { const inp = document.getElementById('omniInput'); if(!inp.value.trim()) return; showToast('Captura procesada por IA'); inp.value=''; };
-        window.renderChat = () => {
-            const c = document.getElementById('chatContainer');
-            if(!c) return;
-            c.innerHTML = window.state.chat.map(m => `<div class="flex ${m.role==='user'?'justify-end':'justify-start'}"><div class="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs ${m.role==='user'?'bg-violet-600 text-white':'bg-slate-800 text-slate-100'}">${m.text}</div></div>`).join('');
-            c.scrollTop = c.scrollHeight;
-        };
-        window.sendChatMessage = () => {
-            const inp = document.getElementById('chatInput');
-            if(!inp.value.trim()) return;
-            window.state.chat.push({role:'user', text: inp.value});
-            const q = inp.value; inp.value=''; renderChat();
-            setTimeout(() => {
-                window.state.chat.push({role:'assistant', text: `Recibido. Estoy analizando "${q}" para ayudarte con tu panel.`});
-                renderChat();
-            }, 800);
-        };
-        window.clearChat = () => { window.state.chat = [{role:'assistant', text: 'Historial limpio.'}]; renderChat(); };
+            const answers = {};
+            CATEGORIES.forEach((cat, index) => {
+                const val = document.getElementById(`cat_${index}`).value.trim().toUpperCase();
+                answers[cat] = val;
+            });
 
-        // Modals & Misc
-        window.completeDayAndStreak = () => { window.state.streakDays++; document.getElementById('streakCountLabel').innerText = `${window.state.streakDays}d`; showToast('🔥 ¡Racha actualizada!'); };
-        window.togglePomodoroModal = () => { const m = document.getElementById('pomodoroModal'); m.classList.toggle('hidden'); m.classList.toggle('flex'); };
-        window.togglePomodoroRun = () => { showToast('Cronómetro de foco activo'); };
-        window.openQuickNoteModal = () => {
-            const m = document.getElementById('customModal');
-            m.classList.remove('hidden'); m.classList.add('flex');
-            document.getElementById('customModalConfirmBtn').onclick = () => {
-                const val = document.getElementById('customModalInput').value.trim();
-                if(val) { window.state.notes.unshift({id:'n_'+Date.now(), text:'📌 '+val}); renderAll(); showToast('Nota guardada'); }
-                m.classList.add('hidden'); m.classList.remove('flex');
-            };
-        };
-        window.closeCustomModal = () => { document.getElementById('customModal').classList.add('hidden'); document.getElementById('customModal').classList.remove('flex'); };
-        window.toggleTheme = () => { document.documentElement.classList.toggle('dark'); };
-        window.fillSampleOmni = () => { document.getElementById('omniInput').value = 'Hoy entrené Empuje en casa y gasté $8500 en almuerzo'; };
-        window.startVoiceCapture = () => { showToast('Dictado por voz iniciado'); };
-        window.generateDailyBriefing = () => { showToast('Copiloto actualizado'); };
-        window.reorganizeTasksWithAI = () => { showToast('Tareas reordenadas por prioridad'); };
-        window.generateGymRoutineWithAI = () => { showToast('Nueva rutina de calistenia generada'); };
-        window.analyzeFinancesWithAI = () => { showToast('Analizando finanzas...'); };
+            // Calcular puntos básicos de esta ronda para este jugador
+            const letter = document.getElementById('activeLetter').innerText;
+            let roundPoints = 0;
+            CATEGORIES.forEach(cat => {
+                const ans = answers[cat];
+                if (ans && ans.startsWith(letter)) {
+                    roundPoints += 10;
+                }
+            });
 
-        window.onload = () => {
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short' });
-            const dateEl = document.getElementById('currentDateLabel');
-            if(dateEl) dateEl.innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
-            lucide.createIcons();
-            renderAll();
-            renderChat();
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', `rooms_${currentRoomId}`);
+            const snap = await getDoc(roomRef);
+            if (snap.exists()) {
+                const room = snap.data();
+                if (room.players && room.players[currentUser.uid]) {
+                    room.players[currentUser.uid].answers = answers;
+                    room.players[currentUser.uid].score = (room.players[currentUser.uid].score || 0) + roundPoints;
+                    room.players[currentUser.uid].submitted = true;
+                    
+                    await updateDoc(roomRef, {
+                        players: room.players,
+                        status: 'scores'
+                    });
+                }
+            }
+        };
+
+        function showScoresUI(room) {
+            switchView('scoresView');
+            const isHost = room.hostUid === currentUser.uid;
+
+            if (isHost) {
+                document.getElementById('hostNextContainer').classList.remove('hidden');
+                document.getElementById('guestNextText').classList.add('hidden');
+            } else {
+                document.getElementById('hostNextContainer').classList.add('hidden');
+                document.getElementById('guestNextText').classList.remove('hidden');
+            }
+
+            const players = room.players || {};
+            const container = document.getElementById('scoresListContainer');
+            container.innerHTML = '';
+
+            Object.values(players).forEach(p => {
+                container.innerHTML += `
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/10">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-yellow-300 text-base"><i class="fa-solid fa-user-circle mr-2"></i>${p.nickname}</span>
+                            <span class="font-extrabold text-pink-400 text-lg">${p.score || 0} pts</span>
+                        </div>
+                        <div class="text-xs text-purple-200 grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                            ${CATEGORIES.map(cat => `<div><span class="text-purple-400">${cat}:</span> ${p.answers && p.answers[cat] ? p.answers[cat] : '-'}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.hostNextRound = async function() {
+            if (!currentRoomId) return;
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', `rooms_${currentRoomId}`);
+            const snap = await getDoc(roomRef);
+            if (!snap.exists()) return;
+            const room = snap.data();
+
+            if (room.currentRound < room.rounds) {
+                await updateDoc(roomRef, {
+                    currentRound: room.currentRound + 1,
+                    status: 'roulette',
+                    activeLetter: ''
+                });
+            } else {
+                showModal("¡Partida Finalizada!", "¡Han completado todas las rondas de Tutti Frutti!");
+            }
+        };
+
+        window.copyRoomCode = function() {
+            if (!currentRoomId) return;
+            navigator.clipboard.writeText(currentRoomId);
+            showModal("Copiado", "¡Código de sala copiado al portapapeles!");
+        };
+
+        window.leaveRoom = function() {
+            if (roomUnsubscribe) roomUnsubscribe();
+            currentRoomId = null;
+            document.getElementById('roomBadge').classList.add('hidden');
+            switchView('menuView');
         };
     </script>
 </body>
