@@ -637,38 +637,37 @@
             const players = room.players || {};
 
             if (players[currentUser.uid]) {
-                // Guardar las respuestas del usuario actual
+                // 1. Guardar las respuestas del usuario que apretó
                 players[currentUser.uid].answers = answers;
                 players[currentUser.uid].submitted = true;
 
                 const letter = room.activeLetter ? room.activeLetter.trim().toUpperCase() : '';
 
-                // CADA JUGADOR CALCULA SU PROPIO PUNTAJE DE ESTA RONDA DE FORMA LIMPIA
-                let roundTotalPoints = 0;
-
+                // 2. EL JUGADOR QUE APRIETA EL BOTÓN HACE EL CÁLCULO GLOBAL PARA TODOS LOS JUGADORES REGISTRADOS
                 CATEGORIES.forEach(cat => {
-                    const myWord = answers[cat] || '';
-                    if (myWord && letter && myWord.startsWith(letter)) {
-                        // Ver cuántos jugadores más pusieron esta misma palabra
-                        let count = 0;
-                        Object.values(players).forEach(p => {
-                            const pWord = (p.answers && p.answers[cat]) ? p.answers[cat].trim().toUpperCase() : '';
-                            if (pWord === myWord) {
-                                count++;
-                            }
-                        });
-
-                        if (count > 1) {
-                            roundTotalPoints += 5;  // Repetida = 5 pts
-                        } else {
-                            roundTotalPoints += 10; // Única = 10 pts
+                    const wordCount = {};
+                    // Contar cuántas veces se repite cada palabra válida en esta categoría entre todos
+                    Object.values(players).forEach(p => {
+                        const word = (p.answers && p.answers[cat]) ? p.answers[cat].trim().toUpperCase() : '';
+                        if (word && letter && word.startsWith(letter)) {
+                            wordCount[word] = (wordCount[word] || 0) + 1;
                         }
-                    }
+                    });
+
+                    // Asignar puntos a cada jugador de manera limpia y sincronizada
+                    Object.values(players).forEach(p => {
+                        const word = (p.answers && p.answers[cat]) ? p.answers[cat].trim().toUpperCase() : '';
+                        if (word && letter && word.startsWith(letter)) {
+                            if (wordCount[word] > 1) {
+                                p.score = (p.score || 0) + 5;  // Repetida = 5 pts
+                            } else {
+                                p.score = (p.score || 0) + 10; // Única = 10 pts
+                            }
+                        }
+                    });
                 });
 
-                // Sumar al puntaje total acumulado del usuario actual
-                players[currentUser.uid].score = (players[currentUser.uid].score || 0) + roundTotalPoints;
-
+                // 3. Subir todo actualizado a Firebase de inmediato
                 await updateDoc(roomRef, {
                     players: players,
                     status: 'scores'
