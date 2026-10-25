@@ -640,42 +640,36 @@
                 players[currentUser.uid].answers = answers;
                 players[currentUser.uid].submitted = true;
 
-                // Calculamos los puntos de esta ronda para todos los jugadores que ya enviaron
-                const letter = room.activeLetter;
+                // ÚNICAMENTE EL ANFITRIÓN HACE EL CÁLCULO GLOBAL DE LA RONDA PARA EVITAR CERO O DUPLICADOS
+                const isHost = room.hostUid === currentUser.uid;
 
-                // Resetear puntaje temporal de la ronda para recalcular fresco
-                Object.values(players).forEach(p => {
-                    p.roundScore = 0;
-                });
+                if (isHost) {
+                    const letter = room.activeLetter ? room.activeLetter.trim().toUpperCase() : '';
 
-                CATEGORIES.forEach(cat => {
-                    const wordCount = {};
-                    Object.values(players).forEach(p => {
-                        const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
-                        if (word && word.startsWith(letter)) {
-                            wordCount[word] = (wordCount[word] || 0) + 1;
-                        }
-                    });
-
-                    Object.values(players).forEach(p => {
-                        const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
-                        if (word && word.startsWith(letter)) {
-                            if (wordCount[word] > 1) {
-                                p.roundScore = (p.roundScore || 0) + 5;  // Repetida = 5 pts
-                            } else {
-                                p.roundScore = (p.roundScore || 0) + 10; // Única = 10 pts
+                    CATEGORIES.forEach(cat => {
+                        const wordCount = {};
+                        // Contar cuántas veces se repite cada palabra válida en esta categoría
+                        Object.values(players).forEach(p => {
+                            const word = p.answers && p.answers[cat] ? p.answers[cat].trim().toUpperCase() : '';
+                            // Validar que no esté vacía y empiece con la letra activa
+                            if (word && letter && word.startsWith(letter)) {
+                                wordCount[word] = (wordCount[word] || 0) + 1;
                             }
-                        }
-                    });
-                });
+                        });
 
-                // Sumar el puntaje de la ronda al puntaje total de forma limpia
-                Object.values(players).forEach(p => {
-                    if (!p.scoredThisRound && p.submitted) {
-                        p.score = (p.score || 0) + (p.roundScore || 0);
-                        p.scoredThisRound = true;
-                    }
-                });
+                        // Asignar puntos por categoría a cada jugador
+                        Object.values(players).forEach(p => {
+                            const word = p.answers && p.answers[cat] ? p.answers[cat].trim().toUpperCase() : '';
+                            if (word && letter && word.startsWith(letter)) {
+                                if (wordCount[word] > 1) {
+                                    p.score = (p.score || 0) + 5;  // Repetida = 5 pts
+                                } else {
+                                    p.score = (p.score || 0) + 10; // Única = 10 pts
+                                }
+                            }
+                        });
+                    });
+                }
 
                 await updateDoc(roomRef, {
                     players: players,
@@ -748,7 +742,6 @@
             const players = room.players || {};
             Object.values(players).forEach(p => {
                 p.submitted = false;
-                p.scoredThisRound = false;
                 p.answers = {};
             });
 
@@ -773,7 +766,6 @@
             Object.values(players).forEach(p => {
                 p.score = 0;
                 p.submitted = false;
-                p.scoredThisRound = false;
                 p.answers = {};
             });
 
