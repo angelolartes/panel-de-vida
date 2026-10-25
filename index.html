@@ -399,8 +399,7 @@
                         nickname: nick,
                         score: 0,
                         answers: {},
-                        submitted: false,
-                        calculated: false
+                        submitted: false
                     }
                 },
                 createdAt: Date.now()
@@ -463,8 +462,7 @@
                         nickname: nick,
                         score: 0,
                         answers: {},
-                        submitted: false,
-                        calculated: false
+                        submitted: false
                     };
                     await updateDoc(roomRef, { players: data.players });
                 }
@@ -569,7 +567,6 @@
                 players[uid].score = 0;
                 players[uid].answers = {};
                 players[uid].submitted = false;
-                players[uid].calculated = false;
             });
 
             await updateDoc(roomRef, {
@@ -643,38 +640,42 @@
                 players[currentUser.uid].answers = answers;
                 players[currentUser.uid].submitted = true;
 
-                const isHost = room.hostUid === currentUser.uid;
+                // Calculamos los puntos de esta ronda para todos los jugadores que ya enviaron
+                const letter = room.activeLetter;
 
-                // EXCLUSIVO: Solo el Anfitrión calcula los puntos de todos una sola vez para evitar duplicados
-                let allSubmitted = true;
+                // Resetear puntaje temporal de la ronda para recalcular fresco
                 Object.values(players).forEach(p => {
-                    if (!p.submitted) allSubmitted = false;
+                    p.roundScore = 0;
                 });
 
-                if (isHost && allSubmitted) {
-                    const letter = room.activeLetter;
-
-                    CATEGORIES.forEach(cat => {
-                        const wordCount = {};
-                        Object.values(players).forEach(p => {
-                            const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
-                            if (word && word.startsWith(letter)) {
-                                wordCount[word] = (wordCount[word] || 0) + 1;
-                            }
-                        });
-
-                        Object.values(players).forEach(p => {
-                            const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
-                            if (word && word.startsWith(letter)) {
-                                if (wordCount[word] > 1) {
-                                    p.score = (p.score || 0) + 5;  // Repetida = 5 pts
-                                } else {
-                                    p.score = (p.score || 0) + 10; // Única = 10 pts
-                                }
-                            }
-                        });
+                CATEGORIES.forEach(cat => {
+                    const wordCount = {};
+                    Object.values(players).forEach(p => {
+                        const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
+                        if (word && word.startsWith(letter)) {
+                            wordCount[word] = (wordCount[word] || 0) + 1;
+                        }
                     });
-                }
+
+                    Object.values(players).forEach(p => {
+                        const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
+                        if (word && word.startsWith(letter)) {
+                            if (wordCount[word] > 1) {
+                                p.roundScore = (p.roundScore || 0) + 5;  // Repetida = 5 pts
+                            } else {
+                                p.roundScore = (p.roundScore || 0) + 10; // Única = 10 pts
+                            }
+                        }
+                    });
+                });
+
+                // Sumar el puntaje de la ronda al puntaje total de forma limpia
+                Object.values(players).forEach(p => {
+                    if (!p.scoredThisRound && p.submitted) {
+                        p.score = (p.score || 0) + (p.roundScore || 0);
+                        p.scoredThisRound = true;
+                    }
+                });
 
                 await updateDoc(roomRef, {
                     players: players,
@@ -747,6 +748,7 @@
             const players = room.players || {};
             Object.values(players).forEach(p => {
                 p.submitted = false;
+                p.scoredThisRound = false;
                 p.answers = {};
             });
 
@@ -771,6 +773,7 @@
             Object.values(players).forEach(p => {
                 p.score = 0;
                 p.submitted = false;
+                p.scoredThisRound = false;
                 p.answers = {};
             });
 
