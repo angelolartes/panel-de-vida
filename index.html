@@ -399,7 +399,8 @@
                         nickname: nick,
                         score: 0,
                         answers: {},
-                        submitted: false
+                        submitted: false,
+                        calculated: false
                     }
                 },
                 createdAt: Date.now()
@@ -462,7 +463,8 @@
                         nickname: nick,
                         score: 0,
                         answers: {},
-                        submitted: false
+                        submitted: false,
+                        calculated: false
                     };
                     await updateDoc(roomRef, { players: data.players });
                 }
@@ -567,6 +569,7 @@
                 players[uid].score = 0;
                 players[uid].answers = {};
                 players[uid].submitted = false;
+                players[uid].calculated = false;
             });
 
             await updateDoc(roomRef, {
@@ -640,19 +643,19 @@
                 players[currentUser.uid].answers = answers;
                 players[currentUser.uid].submitted = true;
 
-                // Verificar si todos ya enviaron para calcular puntos de la ronda
+                const isHost = room.hostUid === currentUser.uid;
+
+                // EXCLUSIVO: Solo el Anfitrión calcula los puntos de todos una sola vez para evitar duplicados
                 let allSubmitted = true;
                 Object.values(players).forEach(p => {
                     if (!p.submitted) allSubmitted = false;
                 });
 
-                if (allSubmitted || true) {
+                if (isHost && allSubmitted) {
                     const letter = room.activeLetter;
 
-                    // Calcular puntaje de esta ronda para cada categoría
                     CATEGORIES.forEach(cat => {
                         const wordCount = {};
-                        // Contar cuántas veces se repite cada palabra válida en esta categoría
                         Object.values(players).forEach(p => {
                             const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
                             if (word && word.startsWith(letter)) {
@@ -660,7 +663,6 @@
                             }
                         });
 
-                        // Asignar puntos por categoría
                         Object.values(players).forEach(p => {
                             const word = p.answers && p.answers[cat] ? p.answers[cat] : '';
                             if (word && word.startsWith(letter)) {
