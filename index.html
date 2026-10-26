@@ -272,7 +272,7 @@
             "Marca"
         ];
 
-        const ALPHABET = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "L", "M", "N", "P", "Q", "R", "S", "T", "U", "V"];
+        const ALPHABET = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"];
 
         let app, db, auth;
         let currentUser = null;
@@ -664,16 +664,49 @@
         };
 
         window.spinLetter = async function() {
-            if (!currentRoomId || !latestRoomData) return;
-            const roundNum = latestRoomData.currentRound || 1;
-            const randLetter = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
-            const roomRef = doc(db, 'rooms', currentRoomId);
-            await updateDoc(roomRef, {
-                activeLetter: randLetter,
-                [`roundLetters.${roundNum}`]: randLetter,
-                status: 'playing'
-            });
-        };
+    if (!currentRoomId || !latestRoomData) return;
+    const roundNum = latestRoomData.currentRound || 1;
+
+    // 1. Letras ya usadas en esta partida
+    const usedInMatch = Object.values(latestRoomData.roundLetters || {});
+
+    // 2. Últimas letras jugadas en partidas recientes (guardadas en el navegador)
+    let recentLetters = [];
+    try {
+        recentLetters = JSON.parse(localStorage.getItem('tf_recent_letters') || '[]');
+    } catch (e) {
+        recentLetters = [];
+    }
+
+    // 3. Filtrar para no repetir ninguna de la partida actual ni de las recientes
+    let available = ALPHABET.filter(l => !usedInMatch.includes(l) && !recentLetters.includes(l));
+
+    // Si por jugar muchas rondas quedan pocas disponibles, priorizar no repetir las de esta partida
+    if (available.length === 0) {
+        available = ALPHABET.filter(l => !usedInMatch.includes(l));
+    }
+    if (available.length === 0) {
+        available = [...ALPHABET];
+    }
+
+    // 4. Sorteo aleatorio real con Web Crypto API
+    const randomBuffer = new Uint32Array(1);
+    window.crypto.getRandomValues(randomBuffer);
+    const randIndex = randomBuffer[0] % available.length;
+    const randLetter = available[randIndex];
+
+    // 5. Guardar en el historial reciente (recuerda las últimas 10 letras)
+    recentLetters.push(randLetter);
+    if (recentLetters.length > 10) recentLetters.shift();
+    localStorage.setItem('tf_recent_letters', JSON.stringify(recentLetters));
+
+    const roomRef = doc(db, 'rooms', currentRoomId);
+    await updateDoc(roomRef, {
+        activeLetter: randLetter,
+        [`roundLetters.${roundNum}`]: randLetter,
+        status: 'playing'
+    });
+};
 
         function startPlayPhase(room) {
             switchView('playView');
