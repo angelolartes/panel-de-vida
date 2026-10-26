@@ -227,4 +227,733 @@
     </div>
 
     <!-- Modal Unirse a Sala -->
-    <div id="joinModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4
+    <div id="joinModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-white/20 p-6 rounded-3xl max-w-sm w-full text-center shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 text-yellow-300">Unirse a Sala</h3>
+            <div class="mb-6">
+                <input type="text" id="joinCodeInput" maxlength="4" placeholder="CÓDIGO (Ej. AB12)" 
+                    class="w-full bg-black/40 border border-white/25 rounded-xl px-4 py-3 text-center text-white placeholder-purple-300/50 uppercase tracking-widest font-extrabold text-xl focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="closeJoinModal()" class="w-1/2 py-3 bg-gray-800 hover:bg-gray-700 font-bold rounded-xl">Cancelar</button>
+                <button onclick="confirmJoinRoom()" class="w-1/2 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 font-bold rounded-xl">Unirse</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Notification Modal -->
+    <div id="customModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-white/20 p-6 rounded-3xl max-w-sm w-full text-center shadow-2xl">
+            <div id="modalIcon" class="text-4xl text-yellow-400 mb-3"><i class="fa-solid fa-circle-exclamation"></i></div>
+            <h3 id="modalTitle" class="text-xl font-bold mb-2">Aviso</h3>
+            <p id="modalMessage" class="text-gray-300 text-sm mb-6">Mensaje...</p>
+            <button onclick="closeModal()" class="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 font-bold rounded-xl shadow">Entendido</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full py-4 text-center text-xs text-purple-300 border-t border-white/10 bg-black/20">
+        Tutti Frutti Online &bull; Firebase Firestore Edition
+    </footer>
+
+    <!-- Firebase SDK Imports & Game Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const CATEGORIES = [
+            "Cosas",
+            "Nombre",
+            "Color",
+            "Fruta o Verdura",
+            "País y Provincia",
+            "Animal",
+            "Marca"
+        ];
+
+        const ALPHABET = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "L", "M", "N", "P", "Q", "R", "S", "T", "U", "V"];
+
+        let app, db, auth;
+        let currentUser = null;
+        let currentRoomId = null;
+        let roomUnsubscribe = null;
+        let timerInterval = null;
+        let stopFallbackTimeout = null;
+
+        // Control de estado local por ronda para no perder nunca lo escrito
+        let activePlayRound = 0;
+        let localSubmittedRound = 0;
+        let isSubmittingNow = false;
+        let myDraftAnswers = {};
+        let latestRoomData = null;
+
+        let customFirebaseConfig = localStorage.getItem('tf_firebase_config');
+
+        // Normaliza texto: quita tildes (LIMÓN -> LIMON), espacios extra (LA RIOJA -> LARIOJA) y pasa a mayúsculas
+        function normalizeWord(str) {
+            if (!str) return '';
+            return str
+                .toString()
+                .trim()
+                .toUpperCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^A-ZÑ0-9]/g, "");
+        }
+
+        window.updateDraft = function(index, val) {
+            const cat = CATEGORIES[index];
+            if (cat) {
+                myDraftAnswers[cat] = val.trim().toUpperCase();
+            }
+        };
+
+        window.onload = async function() {
+            if (customFirebaseConfig) {
+                try {
+                    document.getElementById('firebaseConfigInput').value = customFirebaseConfig;
+                    initFirebase(JSON.parse(customFirebaseConfig));
+                } catch(e) {
+                    openConfigModal();
+                }
+            } else {
+                openConfigModal();
+            }
+
+            const savedNick = localStorage.getItem('tf_nickname');
+            if (savedNick) {
+                document.getElementById('nicknameInput').value = savedNick;
+            }
+        };
+
+        function initFirebase(config) {
+            try {
+                app = initializeApp(config);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                signInAnonymously(auth).then(() => {
+                    currentUser = auth.currentUser;
+                    document.getElementById('headerStatus').innerText = `Conectado (${currentUser.uid.substring(0, 5)}...)`;
+                }).catch(err => {
+                    console.error("Auth error:", err);
+                });
+            } catch (e) {
+                console.error("Firebase init error:", e);
+                showModal("Error de Configuración", "Credenciales de Firebase inválidas. Revisa el JSON.");
+            }
+        }
+
+        window.openConfigModal = function() {
+            document.getElementById('configModal').classList.remove('hidden');
+            document.getElementById('configModal').classList.add('flex');
+        };
+
+        window.closeConfigModal = function() {
+            document.getElementById('configModal').classList.remove('flex');
+            document.getElementById('configModal').classList.add('hidden');
+        };
+
+        window.saveFirebaseConfig = function() {
+            const val = document.getElementById('firebaseConfigInput').value.trim();
+            try {
+                const parsed = JSON.parse(val);
+                localStorage.setItem('tf_firebase_config', val);
+                initFirebase(parsed);
+                closeConfigModal();
+                showModal("¡Conectado!", "Configuración de Firebase guardada correctamente.");
+            } catch(e) {
+                showModal("Formato Inválido", "El texto ingresado no es un JSON válido.");
+            }
+        };
+
+        window.saveNickname = function() {
+            const nick = document.getElementById('nicknameInput').value.trim();
+            if (!nick) {
+                showModal("Atención", "Por favor ingresa un apodo.");
+                return;
+            }
+            localStorage.setItem('tf_nickname', nick);
+            document.getElementById('welcomeNickname').innerText = nick;
+            switchView('menuView');
+        };
+
+        window.logoutUser = function() {
+            localStorage.removeItem('tf_nickname');
+            switchView('loginView');
+        };
+
+        function switchView(viewId) {
+            ['loginView', 'menuView', 'lobbyView', 'rouletteView', 'playView', 'scoresView'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        window.showModal = function(title, message) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('customModal').classList.remove('hidden');
+            document.getElementById('customModal').classList.add('flex');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('customModal').classList.remove('flex');
+            document.getElementById('customModal').classList.add('hidden');
+        };
+
+        window.createRoom = async function() {
+            if (!currentUser || !db) {
+                showModal("Sin Conexión", "Configura Firebase primero antes de crear una sala.");
+                openConfigModal();
+                return;
+            }
+
+            const nick = localStorage.getItem('tf_nickname');
+            const roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+            const roomData = {
+                roomCode: roomCode,
+                hostUid: currentUser.uid,
+                status: 'lobby',
+                rounds: 5,
+                timePerRound: 60,
+                currentRound: 1,
+                activeLetter: '',
+                roundLetters: {},
+                players: {
+                    [currentUser.uid]: {
+                        uid: currentUser.uid,
+                        nickname: nick,
+                        answers: {},
+                        roundAnswers: {},
+                        submittedRound: 0
+                    }
+                },
+                createdAt: Date.now()
+            };
+
+            try {
+                const roomRef = doc(db, 'rooms', roomCode);
+                await setDoc(roomRef, roomData);
+                currentRoomId = roomCode;
+                activePlayRound = 0;
+                localSubmittedRound = 0;
+                enterLobby(roomCode);
+            } catch (e) {
+                console.error(e);
+                showModal("Error", "No se pudo crear la sala en Firestore.");
+            }
+        };
+
+        window.promptJoinRoom = function() {
+            document.getElementById('joinModal').classList.remove('hidden');
+            document.getElementById('joinModal').classList.add('flex');
+        };
+
+        window.closeJoinModal = function() {
+            document.getElementById('joinModal').classList.remove('flex');
+            document.getElementById('joinModal').classList.add('hidden');
+        };
+
+        window.confirmJoinRoom = async function() {
+            const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+            if (code.length < 4) {
+                showModal("Atención", "Ingresa un código válido de 4 caracteres.");
+                return;
+            }
+            if (!currentUser || !db) {
+                showModal("Sin Conexión", "Configura Firebase primero.");
+                openConfigModal();
+                return;
+            }
+
+            try {
+                const roomRef = doc(db, 'rooms', code);
+                const snap = await getDoc(roomRef);
+                if (!snap.exists()) {
+                    showModal("Error", "La sala no existe.");
+                    return;
+                }
+
+                const data = snap.data();
+                const playersCount = Object.keys(data.players || {}).length;
+                if (!data.players[currentUser.uid] && playersCount >= 4) {
+                    showModal("Sala Llena", "Esta sala ya cuenta con 4 jugadores.");
+                    return;
+                }
+
+                closeJoinModal();
+                const nick = localStorage.getItem('tf_nickname');
+
+                if (!data.players[currentUser.uid]) {
+                    await updateDoc(roomRef, {
+                        [`players.${currentUser.uid}`]: {
+                            uid: currentUser.uid,
+                            nickname: nick,
+                            answers: {},
+                            roundAnswers: {},
+                            submittedRound: 0
+                        }
+                    });
+                }
+
+                currentRoomId = code;
+                activePlayRound = 0;
+                localSubmittedRound = 0;
+                enterLobby(code);
+            } catch (e) {
+                console.error(e);
+                showModal("Error", "No se pudo conectar a la sala.");
+            }
+        };
+
+        function enterLobby(roomCode) {
+            document.getElementById('displayRoomCode').innerText = roomCode;
+            document.getElementById('lobbyRoomCode').innerText = roomCode;
+            document.getElementById('roomBadge').classList.remove('hidden');
+            switchView('lobbyView');
+            listenRoom(roomCode);
+        }
+
+        function listenRoom(roomCode) {
+            if (roomUnsubscribe) roomUnsubscribe();
+            const roomRef = doc(db, 'rooms', roomCode);
+
+            roomUnsubscribe = onSnapshot(roomRef, (docSnap) => {
+                if (!docSnap.exists()) return;
+                const room = docSnap.data();
+                latestRoomData = room;
+                updateLobbyUI(room);
+                handleGameState(room);
+            }, (error) => {
+                console.error("Snapshot error:", error);
+            });
+        }
+
+        function updateLobbyUI(room) {
+            const players = room.players || {};
+            const pUids = Object.keys(players);
+            document.getElementById('playerCount').innerText = pUids.length;
+
+            const list = document.getElementById('playersListContainer');
+            list.innerHTML = '';
+            pUids.forEach(uid => {
+                const p = players[uid];
+                const isHost = uid === room.hostUid;
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-white/5 px-4 py-2.5 rounded-xl border border-white/10">
+                        <span class="font-bold text-white"><i class="fa-solid fa-user text-purple-400 mr-2"></i>${p.nickname} ${uid === currentUser.uid ? '(Tú)' : ''}</span>
+                        ${isHost ? '<span class="text-xs bg-yellow-500/20 text-yellow-300 px-2.5 py-1 rounded-lg border border-yellow-500/30">Anfitrión</span>' : '<span class="text-xs text-purple-300">Jugador</span>'}
+                    </div>
+                `;
+            });
+
+            const isHost = room.hostUid === currentUser.uid;
+            if (isHost && room.status === 'lobby') {
+                document.getElementById('hostControls').classList.remove('hidden');
+                document.getElementById('guestWaitingText').classList.add('hidden');
+            } else if (!isHost && room.status === 'lobby') {
+                document.getElementById('hostControls').classList.add('hidden');
+                document.getElementById('guestWaitingText').classList.remove('hidden');
+            }
+        }
+
+        async function handleGameState(room) {
+            const status = room.status;
+            const isHost = room.hostUid === currentUser.uid;
+            const roundNum = room.currentRound || 1;
+
+            if (status === 'lobby') {
+                activePlayRound = 0;
+                localSubmittedRound = 0;
+                switchView('lobbyView');
+            } else if (status === 'roulette') {
+                if (timerInterval) clearInterval(timerInterval);
+                switchView('rouletteView');
+                document.getElementById('rouletteRoundNum').innerText = roundNum;
+                document.getElementById('rouletteBox').innerText = room.activeLetter || '?';
+
+                if (isHost && !room.activeLetter) {
+                    document.getElementById('hostSpinContainer').classList.remove('hidden');
+                    document.getElementById('guestSpinText').classList.add('hidden');
+                } else {
+                    document.getElementById('hostSpinContainer').classList.add('hidden');
+                    document.getElementById('guestSpinText').classList.remove('hidden');
+                }
+            } else if (status === 'playing') {
+                if (activePlayRound !== roundNum) {
+                    activePlayRound = roundNum;
+                    startPlayPhase(room);
+                }
+            } else if (status === 'stopping') {
+                // Alguien tocó Alto el Fuego: cada jugador envía automáticamente lo que tenga escrito
+                if (timerInterval) clearInterval(timerInterval);
+                const myPlayer = room.players && room.players[currentUser.uid];
+                const alreadyInDb = myPlayer && myPlayer.submittedRound === roundNum;
+
+                if (!alreadyInDb && localSubmittedRound !== roundNum && !isSubmittingNow) {
+                    await pushMyAnswersToFirestore(roundNum, false);
+                }
+
+                // Verificar si todos los jugadores ya subieron sus respuestas de esta ronda
+                const playersList = Object.values(room.players || {});
+                const allSubmitted = playersList.every(p => p.submittedRound === roundNum);
+
+                if (allSubmitted && isHost) {
+                    if (stopFallbackTimeout) clearTimeout(stopFallbackTimeout);
+                    const roomRef = doc(db, 'rooms', currentRoomId);
+                    await updateDoc(roomRef, { status: 'scores' });
+                } else if (isHost && !stopFallbackTimeout) {
+                    // Por seguridad: si alguien tiene internet lento, esperar máximo 1.5s y mostrar puntajes
+                    stopFallbackTimeout = setTimeout(async () => {
+                        stopFallbackTimeout = null;
+                        if (latestRoomData && latestRoomData.status === 'stopping') {
+                            const roomRef = doc(db, 'rooms', currentRoomId);
+                            await updateDoc(roomRef, { status: 'scores' });
+                        }
+                    }, 1500);
+                }
+            } else if (status === 'scores') {
+                if (timerInterval) clearInterval(timerInterval);
+                if (stopFallbackTimeout) {
+                    clearTimeout(stopFallbackTimeout);
+                    stopFallbackTimeout = null;
+                }
+                // Si por lag este dispositivo aún no había subido sus respuestas, las sube igual sin pisar a nadie
+                const myPlayer = room.players && room.players[currentUser.uid];
+                const alreadyInDb = myPlayer && myPlayer.submittedRound === roundNum;
+                if (!alreadyInDb && localSubmittedRound !== roundNum && !isSubmittingNow) {
+                    await pushMyAnswersToFirestore(roundNum, false);
+                }
+                showScoresScreen(room);
+            }
+        }
+
+        window.startGame = async function() {
+            if (!currentRoomId) return;
+            const rounds = parseInt(document.getElementById('lobbyRounds').value);
+            const time = parseInt(document.getElementById('lobbyTime').value);
+
+            const roomRef = doc(db, 'rooms', currentRoomId);
+            const snap = await getDoc(roomRef);
+            if (!snap.exists()) return;
+            const room = snap.data();
+
+            const players = room.players || {};
+            Object.keys(players).forEach(uid => {
+                players[uid].answers = {};
+                players[uid].roundAnswers = {};
+                players[uid].submittedRound = 0;
+            });
+
+            activePlayRound = 0;
+            localSubmittedRound = 0;
+            myDraftAnswers = {};
+
+            await updateDoc(roomRef, {
+                rounds: rounds,
+                timePerRound: time,
+                currentRound: 1,
+                status: 'roulette',
+                activeLetter: '',
+                roundLetters: {},
+                players: players
+            });
+        };
+
+        window.spinLetter = async function() {
+            if (!currentRoomId || !latestRoomData) return;
+            const roundNum = latestRoomData.currentRound || 1;
+            const randLetter = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+            const roomRef = doc(db, 'rooms', currentRoomId);
+            await updateDoc(roomRef, {
+                activeLetter: randLetter,
+                [`roundLetters.${roundNum}`]: randLetter,
+                status: 'playing'
+            });
+        };
+
+        function startPlayPhase(room) {
+            switchView('playView');
+            const roundNum = room.currentRound || 1;
+            document.getElementById('playRoundNum').innerText = roundNum;
+            document.getElementById('activeLetter').innerText = room.activeLetter;
+
+            myDraftAnswers = {};
+            isSubmittingNow = false;
+
+            const btn = document.getElementById('altoElFuegoBtn');
+            btn.disabled = false;
+            btn.innerHTML = `¡ALTO EL FUEGO! <i class="fa-solid fa-hand-paper ml-2"></i>`;
+
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = '';
+
+            CATEGORIES.forEach((cat, index) => {
+                container.innerHTML += `
+                    <div class="bg-white/5 border border-white/10 p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label class="font-semibold text-purple-200 text-sm sm:w-1/3">${cat}</label>
+                        <input type="text" id="cat_${index}" oninput="updateDraft(${index}, this.value)" placeholder="Con '${room.activeLetter}'..." 
+                            class="w-full sm:w-2/3 bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-pink-500 uppercase">
+                    </div>
+                `;
+            });
+
+            let timeLeft = room.timePerRound;
+            document.getElementById('timerCountdown').innerText = timeLeft;
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerCountdown').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitAltoElFuego();
+                }
+            }, 1000);
+        }
+
+        function collectCurrentInputs() {
+            const answers = {};
+            CATEGORIES.forEach((cat, index) => {
+                const el = document.getElementById(`cat_${index}`);
+                const domVal = el ? el.value.trim().toUpperCase() : '';
+                answers[cat] = domVal || myDraftAnswers[cat] || '';
+            });
+            return answers;
+        }
+
+        async function pushMyAnswersToFirestore(roundNum, triggerStop) {
+            if (!currentRoomId || !currentUser || isSubmittingNow) return;
+            isSubmittingNow = true;
+            localSubmittedRound = roundNum;
+
+            const btn = document.getElementById('altoElFuegoBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `Enviando respuestas... <i class="fa-solid fa-spinner fa-spin ml-2"></i>`;
+            }
+
+            const answers = collectCurrentInputs();
+            const roomRef = doc(db, 'rooms', currentRoomId);
+
+            // Uso de dot-notation: SOLO actualiza las respuestas de ESTE jugador sin pisar las del otro
+            const updatePayload = {
+                [`players.${currentUser.uid}.answers`]: answers,
+                [`players.${currentUser.uid}.roundAnswers.${roundNum}`]: answers,
+                [`players.${currentUser.uid}.submittedRound`]: roundNum
+            };
+
+            if (triggerStop) {
+                updatePayload.status = 'stopping';
+            }
+
+            try {
+                await updateDoc(roomRef, updatePayload);
+            } catch (e) {
+                console.error("Error enviando respuestas:", e);
+            } finally {
+                isSubmittingNow = false;
+            }
+        }
+
+        window.submitAltoElFuego = async function() {
+            if (timerInterval) clearInterval(timerInterval);
+            if (!latestRoomData) return;
+            const roundNum = latestRoomData.currentRound || 1;
+            await pushMyAnswersToFirestore(roundNum, true);
+        };
+
+        // Cálculo 100% determinista e idempotente a partir del historial de rondas (imposible que sume doble o falle)
+        function calculateDeterministicScores(room) {
+            const players = room.players || {};
+            const uids = Object.keys(players);
+            const maxRound = room.currentRound || 1;
+            const roundLetters = room.roundLetters || {};
+
+            const totalScores = {};
+            const currentRoundScores = {};
+            const currentRoundWordPts = {};
+
+            uids.forEach(uid => {
+                totalScores[uid] = 0;
+                currentRoundScores[uid] = 0;
+                currentRoundWordPts[uid] = {};
+            });
+
+            for (let r = 1; r <= maxRound; r++) {
+                const rawLetter = (roundLetters[r]) ? roundLetters[r] : (r === maxRound ? room.activeLetter : '');
+                const letter = normalizeWord(rawLetter);
+                if (!letter) continue;
+
+                CATEGORIES.forEach(cat => {
+                    const wordFreq = {};
+                    const cleanByUid = {};
+
+                    // 1. Normalizar palabras y contar cuántas veces aparecen en esta categoría
+                    uids.forEach(uid => {
+                        const p = players[uid];
+                        const rAnswers = (p.roundAnswers && p.roundAnswers[r])
+                            ? p.roundAnswers[r]
+                            : (r === maxRound ? (p.answers || {}) : {});
+                        const rawWord = rAnswers[cat] || '';
+                        const cleanWord = normalizeWord(rawWord);
+
+                        // Debe empezar con la letra de la ronda y tener al menos 2 letras
+                        if (cleanWord.length >= 2 && cleanWord.startsWith(letter)) {
+                            cleanByUid[uid] = cleanWord;
+                            wordFreq[cleanWord] = (wordFreq[cleanWord] || 0) + 1;
+                        } else {
+                            cleanByUid[uid] = '';
+                        }
+                    });
+
+                    // 2. Asignar 5 puntos si se repite, 10 puntos si es única, 0 si está vacía/inválida
+                    uids.forEach(uid => {
+                        const cleanWord = cleanByUid[uid];
+                        let pts = 0;
+                        if (cleanWord) {
+                            pts = wordFreq[cleanWord] > 1 ? 5 : 10;
+                        }
+                        totalScores[uid] += pts;
+                        if (r === maxRound) {
+                            currentRoundScores[uid] += pts;
+                            currentRoundWordPts[uid][cat] = pts;
+                        }
+                    });
+                });
+            }
+
+            return { totalScores, currentRoundScores, currentRoundWordPts };
+        }
+
+        function showScoresScreen(room) {
+            switchView('scoresView');
+            const isHost = room.hostUid === currentUser.uid;
+            const roundNum = room.currentRound || 1;
+            const isFinalRound = roundNum >= room.rounds;
+
+            const { totalScores, currentRoundScores, currentRoundWordPts } = calculateDeterministicScores(room);
+
+            if (isFinalRound) {
+                document.getElementById('scoresTitle').innerText = "🏆 ¡Podio de Ganadores!";
+                document.getElementById('scoresSubtitle').innerText = `Partida finalizada (${room.rounds} rondas completadas).`;
+                document.getElementById('nextRoundBtn').innerText = "Volver a la Sala / Jugar de Nuevo";
+                document.getElementById('nextRoundBtn').setAttribute("onclick", "returnToLobby()");
+            } else {
+                document.getElementById('scoresTitle').innerText = `Puntajes - Ronda ${roundNum} de ${room.rounds}`;
+                document.getElementById('scoresSubtitle').innerText = `Letra '${room.activeLetter}' • 10 pts única / 5 pts repetida`;
+                document.getElementById('nextRoundBtn').innerText = "Siguiente Ronda ➔";
+                document.getElementById('nextRoundBtn').setAttribute("onclick", "nextRound()");
+            }
+
+            if (isHost) {
+                document.getElementById('hostNextContainer').classList.remove('hidden');
+                document.getElementById('guestNextText').classList.add('hidden');
+            } else {
+                document.getElementById('hostNextContainer').classList.add('hidden');
+                document.getElementById('guestNextText').classList.remove('hidden');
+            }
+
+            const players = room.players || {};
+            const container = document.getElementById('scoresListContainer');
+            container.innerHTML = '';
+
+            const sortedPlayers = Object.values(players).sort((a, b) => (totalScores[b.uid] || 0) - (totalScores[a.uid] || 0));
+
+            sortedPlayers.forEach((p, index) => {
+                let badge = "";
+                if (isFinalRound) {
+                    if (index === 0) badge = "🥇 1° Puesto - ";
+                    else if (index === 1) badge = "🥈 2° Puesto - ";
+                    else if (index === 2) badge = "🥉 3° Puesto - ";
+                    else badge = `${index + 1}° Puesto - `;
+                }
+
+                const rAnswers = (p.roundAnswers && p.roundAnswers[roundNum]) ? p.roundAnswers[roundNum] : (p.answers || {});
+                const total = totalScores[p.uid] || 0;
+                const roundPts = currentRoundScores[p.uid] || 0;
+
+                container.innerHTML += `
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/10">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-yellow-300 text-base"><i class="fa-solid fa-user-circle mr-2"></i>${badge}${p.nickname}</span>
+                            <div class="text-right">
+                                <span class="text-xs bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-lg mr-1">+${roundPts} en ronda</span>
+                                <span class="font-extrabold text-pink-400 text-lg">${total} pts totales</span>
+                            </div>
+                        </div>
+                        <div class="text-xs text-purple-200 grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                            ${CATEGORIES.map(cat => {
+                                const w = rAnswers[cat] ? rAnswers[cat] : '-';
+                                const pts = (currentRoundWordPts[p.uid] && currentRoundWordPts[p.uid][cat]) || 0;
+                                const ptsColor = pts === 10 ? 'text-green-400 font-bold' : (pts === 5 ? 'text-yellow-300 font-bold' : 'text-gray-500');
+                                return `<div><span class="text-purple-400">${cat}:</span> ${w} <span class="${ptsColor}">(+${pts})</span></div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.nextRound = async function() {
+            if (!currentRoomId || !latestRoomData) return;
+            const roomRef = doc(db, 'rooms', currentRoomId);
+            const nextR = (latestRoomData.currentRound || 1) + 1;
+
+            if (latestRoomData.currentRound < latestRoomData.rounds) {
+                await updateDoc(roomRef, {
+                    currentRound: nextR,
+                    status: 'roulette',
+                    activeLetter: ''
+                });
+            }
+        };
+
+        window.returnToLobby = async function() {
+            if (!currentRoomId) return;
+            const roomRef = doc(db, 'rooms', currentRoomId);
+            const snap = await getDoc(roomRef);
+            if (!snap.exists()) return;
+            const room = snap.data();
+
+            const players = room.players || {};
+            Object.keys(players).forEach(uid => {
+                players[uid].answers = {};
+                players[uid].roundAnswers = {};
+                players[uid].submittedRound = 0;
+            });
+
+            activePlayRound = 0;
+            localSubmittedRound = 0;
+            myDraftAnswers = {};
+
+            await updateDoc(roomRef, {
+                currentRound: 1,
+                status: 'lobby',
+                activeLetter: '',
+                roundLetters: {},
+                players: players
+            });
+        };
+
+        window.copyRoomCode = function() {
+            if (!currentRoomId) return;
+            navigator.clipboard.writeText(currentRoomId);
+            showModal("Copiado", "¡Código de sala copiado al portapapeles!");
+        };
+
+        window.leaveRoom = function() {
+            if (roomUnsubscribe) roomUnsubscribe();
+            if (timerInterval) clearInterval(timerInterval);
+            currentRoomId = null;
+            activePlayRound = 0;
+            localSubmittedRound = 0;
+            document.getElementById('roomBadge').classList.add('hidden');
+            switchView('menuView');
+        };
+    </script>
+</body>
+</html>
